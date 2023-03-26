@@ -1,4 +1,4 @@
-const BASE_URL = "https://git.tyrantg.com/tyrantgenesis/hikerViewRules/raw/master/"
+const BASE_URL = "https://github.com/xc2023/-/blob/main/"
 /* Base Function */
 
 /**
