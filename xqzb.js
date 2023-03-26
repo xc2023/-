@@ -143,4 +143,9 @@ d.push({
     img: "https://hw-live-cover.msstatic.com/huyalive/17989609-17989609-77264782322827264-4404057136-10057-A-0-1/20230326090257.jpg?x-oss-process=style/w338_h190&ignore-sign-in-query=x-image-process,x-oss-process&AWSAccessKeyId=QZDMVHKCUJBV0Z15GO0X&Expires=1695344577&Signature=CjnSjYJM3vJR6nclKqvhVSecems=&streamName=17989609-17989609-77264782322827264-4404057136-10057-A-0-1&interval=10",
     url: lazy('https://m.huya.com/14730819')
 })
+d.push({
+    title: "象棋戴少帅象棋直播",
+    img: "https://hw-live-cover.msstatic.com/huyalive/2291875087-2291875087-9843528545182154752-4583873630-10057-A-0-1/20230326172133.jpg?x-oss-process=image/resize,limit_0,m_fill,w_338,h_190/sharpen,80/format,jpg/interlace,1/quality,q_90&ignore-sign-in-query=x-image-process,x-oss-process&AWSAccessKeyId=QZDMVHKCUJBV0Z15GO0X&Expires=1695374493&Signature=Zm4kraxS8bxcxcOpHq9LM5+wDk4=&streamName=2291875087-2291875087-9843528545182154752-4583873630-10057-A-0-1&interval=10",
+    url: lazy('https://www.huya.com/xqdss')
+})
 setResult(d);
