@@ -1,4 +1,4 @@
-const BASE_URL = "https://github.com/xc2023/-/blob/main/"
+const BASE_URL = "https://raw.githubusercontent.com/xc2023/-/main/"
 /* Base Function */
 
 /**
