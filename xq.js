@@ -23,5 +23,5 @@ const time = (new Date()).getTime()
 
 /* Customize Function */
 const xqzb = _ => {
-  godWriteFile(BASE_URL+"zbxq.js", 'hiker://hiker://files/xc2022/xqzb.js')
+  godWriteFile(BASE_URL+"xqzb.js", 'hiker://hiker://files/xc2022/xqzb.js')
   /* Customize Function */
