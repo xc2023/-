@@ -1,0 +1,629 @@
+<!doctype html>
+<html lang="en"> 
+<head> 
+  <meta charset="UTF-8"> 
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"> 
+  <title>自动轮播图</title> 
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    html, body {
+      min-height: 280px;
+      margin: 0;
+      padding: 0;
+      font-family: Arial, sans-serif;
+      background-color: #f5f5f5;
+      overflow: visible;
+    }
+
+    .carousel-container {
+      width: calc(100% - 25px);
+      margin: 8px auto;
+      max-width: 1200px;
+    }
+
+    @media (max-width: 768px) {
+      .carousel-container {
+        width: calc(100% - 20px);
+        margin: 12px auto;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .carousel-container {
+        width: calc(100% - 15px);
+        margin: 10px auto;
+      }
+    }
+
+    /* Logo样式 */
+    .carousel-logo-container {
+      text-align: center;
+      margin-bottom: 5px;
+    }
+
+    .carousel-logo {
+      height: 88px;
+      vertical-align: middle;
+      border-radius: 4px;
+      /* 如果logo是黑色文字在透明背景上，可以使用滤镜反转颜色 */
+      /* filter: brightness(0) invert(1); /* 这会将黑色变为白色 */
+    }
+
+    @media (max-width: 480px) {
+      .carousel-logo {
+        height: 40px;
+        padding: 4px;
+      }
+    }
+
+    .carousel {
+      position: relative;
+      overflow: hidden;
+      border-radius: 9px;
+      box-shadow: 
+        0 4px 12px rgba(0, 0, 0, 0.6),
+        0 8px 20px rgba(0, 0, 0, 0.16),
+        0 2px 4px rgba(0, 0, 0, 0.1);
+      height: auto; /* 可省略，默认就是auto */
+      background: #fff;
+      width: 100%;
+    }
+
+    @media (max-width: 768px) {
+      .carousel {
+        height: 220px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .carousel {
+        height: 179px;
+        min-height: 150px;
+      }
+    }
+
+    .carousel-inner {
+      display: flex;
+      transition: transform 0.5s ease;
+      width: 100%;
+      height: 100%;
+    }
+
+    .carousel-item {
+      flex: 0 0 100%;
+      width: 100%;
+      height: 100%;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding-top: 15px;     /* 增加上留白 */
+      padding-bottom: 15px;  /* 增加下留白 */
+      box-sizing: border-box;
+      background: #f8f8f8;   /* 明确背景色 */
+    }
+
+    /* 上方胶片孔 */
+    .carousel-item::before {
+      content: '';
+      position: absolute;
+      top: 5px;             /* 在上留白区域内 */
+      left: 50%;
+      transform: translateX(-50%);
+      width: 99%;
+      height: 26px;
+      background: linear-gradient(
+        90deg,
+        #000 2px,
+        transparent 9px
+      );
+      background-size: 15px 6px;
+      background-repeat: repeat-x;
+      z-index: 1;
+    }
+
+    /* 下方胶片孔 */
+    .carousel-item::after {
+      content: '';
+      position: absolute;
+      bottom: -15px;         /* 在下留白区域内 */
+      left: 50%;
+      transform: translateX(-60%);
+      width: 99%;
+      height: 26px;
+      background: linear-gradient(
+        90deg,
+        #000 2px,
+        transparent 9px
+      );
+      background-size: 15px 6px;
+      background-repeat: repeat-x;
+      z-index: 1;
+    }
+
+    .carousel-item img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center;
+      display: block;
+      transition: opacity 0.3s ease, transform 0.3s ease;
+    }
+
+    .carousel-control {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 8px;
+      height: 8px;
+      background-color: transparent;
+      color: white;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      cursor: pointer;
+      z-index: 2;
+      transition: background-color 0.3s ease;
+      font-size: 18px;
+      font-weight: bold;
+    }
+
+    .carousel-control:hover {
+      background-color: rgba(0, 0, 0, 0.3);
+    }
+
+    .carousel-control-prev {
+      left: 15px;
+    }
+
+    .carousel-control-next {
+      right: 15px;
+    }
+
+    .carousel-caption {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      color: white;
+      padding: 5px 10px;
+      z-index: 1;
+      font-size: 15px;
+      font-weight: bold;
+      background: linear-gradient(to bottom right, rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.1));
+      border-radius: 5px;
+    }
+
+    @media (max-width: 480px) {
+      .carousel-caption {
+        font-size: 12px;
+        padding: 3px 8px;
+      }
+    }
+
+    .carousel-indicators {
+      position: absolute;
+      bottom: 15px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      justify-content: center;
+      z-index: 1;
+      gap: 3px;
+    }
+
+    .carousel-indicators span {
+      width: 10px;
+      height: 2px;
+      border: none;
+      cursor: pointer;
+      border-radius: 1px;
+      background-color: #808080;
+      transition: all 0.3s ease;
+    }
+
+    .carousel-indicators span.active {
+      background-color: Lime;
+    }
+
+    .carousel-item img:active {
+      opacity: 0.8;
+      transform: scale(0.98);
+    }
+    
+    /* 分类标题样式 */
+    .category-title {
+      font-size: 20px;
+      font-weight: bold;
+      color: #333;
+      margin: 20px 0 10px 15px;
+      padding: 5px 0;
+      border-left:6px solid #22D59C;
+      padding: 0.01px 5;
+    }
+    
+    /* 内容列表容器 */
+    .content-list {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-around;
+      padding: 10px;
+    }
+    
+    /* 内容项 */
+    .content-item {
+      width: calc(33.333% - 20px);
+      margin-bottom: 20px;
+      background: white;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.6);
+      transition: transform 0.3s ease;
+    }
+    
+    .content-item:hover {
+      transform: translateY(-5px);
+    }
+    
+    @media (max-width: 768px) {
+      .content-item {
+        width: calc(50% - 15px);
+      }
+    }
+    
+    @media (max-width: 480px) {
+      .content-item {
+        width: calc(50% - 20px); /* 1/3宽度减去左右间距，避免卡片拥挤 */
+      }
+    }
+    
+    /* 内容图片 */
+    .content-img {
+      width: 100%;
+      height: 228px;
+      object-fit: cover;
+    }
+    
+    /* 内容信息 */
+    .content-info {
+      padding: 5px;
+    }
+    
+    .content-title {
+      font-size: 16px;
+      font-weight: bold;
+      margin-bottom: 1px;
+      color: #333;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    
+    .content-desc {
+      font-size: 14px;
+      color: #666;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* 新增：回到顶部按钮样式 */
+    #backToTopBtn {
+      position: fixed; /* 固定在视口右下角，不随滚动移动 */
+      bottom: 20px; /* 距离底部20px */
+      right: 20px; /* 距离右侧20px */
+      display: none; /* 默认隐藏，滚动后显示 */
+      width: 40px; /* 按钮宽度 */
+      height: 40px; /* 按钮高度 */
+      background-color: #22D59C; /* 按钮背景色，与分类标题竖线色统一 */
+      color: white; /* 按钮图标/文字色 */
+      border: none; /* 无边框 */
+      border-radius: 50%; /* 圆形按钮 */
+      cursor: pointer; /* 鼠标悬浮显示指针 */
+      z-index: 100; /* 层级高于轮播和内容，确保不被遮挡 */
+      transition: background-color 0.3s ease; /* 背景色过渡动画 */
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+    }
+
+    #backToTopBtn:hover {
+      background-color: #1aa77d; /* 悬浮时加深背景色，增强交互感 */
+    }
+
+    /* 响应式：小屏适配按钮大小 */
+    @media (max-width: 480px) {
+      #backToTopBtn {
+        width: 35px;
+        height: 35px;
+        bottom: 15px;
+        right: 15px;
+        font-size: 16px;
+      }
+    }
+  </style>
+</head> 
+<body>
+  <div class="carousel-container">
+    <div class="carousel-logo-container">
+      <img class="carousel-logo" src="https://www.393tv.com/upload/mxprocms/20250719-1/021fc9aaeb52bfab44f74eb3746b459e.png" alt="393TV Logo" onerror="this.style.display='none'">
+    </div>
+    <div class="carousel"> 
+      <div class="carousel-inner" id="carousel-inner"></div> 
+      <div class="carousel-control carousel-control-prev" id="prevButton" aria-label="Previous Slide">〈</div> 
+      <div class="carousel-control carousel-control-next" id="nextButton" aria-label="Next Slide">〉</div> 
+      <div class="carousel-indicators" id="carousel-indicators"></div> 
+    </div>
+  </div>
+  
+  <!-- 电影 -->
+  <div class="category-title">电影</div>
+  <div class="content-list" id="movies-list"></div>
+  
+  <!-- 电视剧 -->
+  <div class="category-title">电视剧</div>
+  <div class="content-list" id="tvshows-list"></div>
+  
+  <!-- 综艺 -->
+  <div class="category-title">综艺</div>
+  <div class="content-list" id="variety-list"></div>
+  
+  <!-- 动漫 -->
+  <div class="category-title">动漫</div>
+  <div class="content-list" id="anime-list"></div>
+  
+  <!-- 短剧 -->
+  <div class="category-title">短剧</div>
+  <div class="content-list" id="short-drama-list"></div>
+  
+  <button id="backToTopBtn" title="回到顶部">🔝</button>
+  
+  <script>
+    // 渲染内容列表的函数
+    function renderContentList(containerId, items) {
+      const container = document.getElementById(containerId);
+      if (!container) return;
+      
+      container.innerHTML = '';
+      
+      items.forEach(item => {
+        const contentItem = document.createElement('div');
+        contentItem.className = 'content-item';
+        contentItem.innerHTML = `
+          <img class="content-img" src="${item.img}" alt="${item.title}" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjE1MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjE1MCIgZmlsbD0iI2RkZCIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTQiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIGZpbGw9IiM5OTkiPlxuICAgIERlZmF1bHQgSW1hZ2VcbiAgPC90ZXh0Pjwvc3ZnPg=='">
+          <div class="content-info">
+            <div class="content-title" title="${item.title}">${item.title}</div>
+            <div class="content-desc">${item.desc || ''}</div>
+          </div>
+        `;
+        contentItem.addEventListener('click', () => {
+          window.open(item.url, '_blank');
+        });
+        container.appendChild(contentItem);
+      });
+    }
+
+    // 所有逻辑放在 DOM 加载完成后
+    document.addEventListener('DOMContentLoaded', function() {
+      // 渲染内容
+      if (typeof window.moviesData !== 'undefined') {
+        renderContentList('movies-list', window.moviesData);
+      }
+      if (typeof window.tvshowsData !== 'undefined') {
+        renderContentList('tvshows-list', window.tvshowsData);
+      }
+      if (typeof window.varietyData !== 'undefined') {
+        renderContentList('variety-list', window.varietyData);
+      }
+      if (typeof window.animeData !== 'undefined') {
+        renderContentList('anime-list', window.animeData);
+      }
+      if (typeof window.shortDramaData !== 'undefined') {
+        renderContentList('short-drama-list', window.shortDramaData);
+      }
+
+      // ✅ 返回顶部按钮逻辑（确保在此处定义）
+      const backToTopBtn = document.getElementById('backToTopBtn');
+
+      if (backToTopBtn) {
+        // 显示/隐藏按钮
+        window.addEventListener('scroll', () => {
+          if (window.scrollY > 500) {
+            backToTopBtn.style.display = 'flex';
+          } else {
+            backToTopBtn.style.display = 'none';
+          }
+        });
+
+        // 点击事件
+        backToTopBtn.addEventListener('click', () => {
+          window.scrollTo({
+            top: 0,
+            behavior: 'smooth'
+          });
+        });
+      }
+      
+      // 轮播图功能初始化
+      initCarousel();
+    });
+    
+    // 轮播图初始化函数
+    function initCarousel() {
+      const carouselInner = document.getElementById('carousel-inner');
+      const prevButton = document.getElementById('prevButton');
+      const nextButton = document.getElementById('nextButton');
+      const indicators = document.getElementById('carousel-indicators');
+
+      // 如果没有轮播数据，直接返回
+      if (!carouselInner || !window.carouselData || window.carouselData.length === 0) {
+        return;
+      }
+
+      let currentIndex = 1;
+      let autoPlayInterval;
+      const data = window.carouselData;
+
+      // 创建轮播项
+      const createCarouselItems = (data) => {
+        if (data.length > 0) {
+          const firstClone = data[0];
+          const lastClone = data[data.length - 1];
+
+          // 添加最后一个克隆项（用于循环）
+          const firstItem = document.createElement('div');
+          firstItem.classList.add('carousel-item');
+          firstItem.innerHTML = `<a href="${lastClone.url}" target="_blank">
+              <img src="${lastClone.img}" alt="${lastClone.title}">
+              ${lastClone.title ? `<div class="carousel-caption">${lastClone.title}</div>` : ''}
+          </a>`;
+          carouselInner.appendChild(firstItem);
+
+          // 添加实际项
+          data.forEach((item, index) => {
+            const carouselItem = document.createElement('div');
+            carouselItem.classList.add('carousel-item');
+            carouselItem.innerHTML = `<a href="${item.url}" target="_blank">
+                <img src="${item.img}" alt="${item.title}">
+                ${item.title ? `<div class="carousel-caption">${item.title}</div>` : ''}
+            </a>`;
+            carouselInner.appendChild(carouselItem);
+          });
+
+          // 添加第一个克隆项（用于循环）
+          const lastItem = document.createElement('div');
+          lastItem.classList.add('carousel-item');
+          lastItem.innerHTML = `<a href="${firstClone.url}" target="_blank">
+              <img src="${firstClone.img}" alt="${firstClone.title}">
+              ${firstClone.title ? `<div class="carousel-caption">${firstClone.title}</div>` : ''}
+          </a>`;
+          carouselInner.appendChild(lastItem);
+        }
+      };
+
+      // 创建指示器
+      const createIndicatorsEl = (data) => {
+        indicators.innerHTML = "";
+        data.forEach((_, index) => {
+          const indicator = document.createElement('span');
+          indicator.dataset.index = index;
+          indicator.addEventListener('click', function() {
+            const targetIndex = parseInt(this.dataset.index);
+            const adjustedIndex = targetIndex + 1;
+            if (adjustedIndex !== currentIndex) {
+              stopAutoPlay();
+              currentIndex = adjustedIndex;
+              updateCarousel(data);
+              updateIndicators(data);
+              startAutoPlay();
+            }
+          });
+          indicators.appendChild(indicator);
+        });
+        const firstIndicator = indicators.querySelector('span');
+        if (firstIndicator) {
+          firstIndicator.classList.add('active');
+        }
+      };
+
+      // 下一张
+      const nextSlide = (data) => {
+        currentIndex++;
+        updateCarousel(data);
+        updateIndicators(data);
+      };
+
+      // 上一张
+      const prevSlide = (data) => {
+        currentIndex--;
+        updateCarousel(data);
+        updateIndicators(data);
+      };
+
+      // 更新轮播位置
+      const updateCarousel = (data) => {
+        const totalItems = data.length + 2;
+        const translateXValue = -currentIndex * 100 + '%';
+        carouselInner.style.transition = 'transform 0.5s ease';
+        carouselInner.style.transform = 'translateX(' + translateXValue + ')';
+
+        if (currentIndex === 0) {
+          setTimeout(() => {
+            carouselInner.style.transition = 'none';
+            currentIndex = data.length;
+            const translateXValue = -currentIndex * 100 + '%';
+            carouselInner.style.transform = 'translateX(' + translateXValue + ')';
+          }, 500);
+        } else if (currentIndex === totalItems - 1) {
+          setTimeout(() => {
+            carouselInner.style.transition = 'none';
+            currentIndex = 1;
+            const translateXValue = -currentIndex * 100 + '%';
+            carouselInner.style.transform = 'translateX(' + translateXValue + ')';
+          }, 500);
+        }
+      };
+
+      // 更新指示器
+      const updateIndicators = (data) => {
+        const indicatorSpans = document.querySelectorAll('.carousel-indicators span');
+        let prevActiveIndicator = indicators.querySelector('.active');
+        if (prevActiveIndicator) {
+          prevActiveIndicator.classList.remove('active');
+        }
+
+        let realIndex = currentIndex - 1;
+        if (realIndex < 0) realIndex = data.length - 1;
+        if (realIndex >= data.length) realIndex = 0;
+
+        const targetIndicator = indicators.querySelector(`[data-index="${realIndex}"]`);
+        if (targetIndicator) {
+          targetIndicator.classList.add('active');
+        }
+      };
+
+      // 开始自动播放
+      const startAutoPlay = () => {
+        autoPlayInterval = setInterval(() => nextSlide(data), 3000);
+      };
+
+      // 停止自动播放
+      const stopAutoPlay = () => {
+        clearInterval(autoPlayInterval);
+      };
+
+      // 绑定按钮事件
+      prevButton.addEventListener('click', () => {
+        stopAutoPlay();
+        prevSlide(data);
+        startAutoPlay();
+      });
+
+      nextButton.addEventListener('click', () => {
+        stopAutoPlay();
+        nextSlide(data);
+        startAutoPlay();
+      });
+
+      // 绑定控制按钮触摸/鼠标事件
+      const controlButtons = document.querySelectorAll('.carousel-control');
+      controlButtons.forEach(button => {
+        button.addEventListener('touchend', () => {
+          button.style.backgroundColor = 'transparent';
+        });
+        button.addEventListener('mouseup', () => {
+          button.style.backgroundColor = 'transparent';
+        });
+      });
+
+      // 初始化轮播
+      createCarouselItems(data);
+      createIndicatorsEl(data);
+      startAutoPlay();
+    }
+  </script>
+</body>
+</html>
