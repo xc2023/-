@@ -1,0 +1,426 @@
+<!doctype html>
+<html lang="en"> 
+<head> 
+  <meta charset="UTF-8"> 
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"> 
+  <title>自动轮播图</title> 
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    html, body {
+      min-height: 280px;
+      margin: 0;
+      padding: 0;
+      font-family: Arial, sans-serif;
+      background-color: #f5f5f5;
+      overflow: visible;
+    }
+
+    .carousel-container {
+      width: calc(100% - 25px);
+      margin: 8px auto;
+      max-width: 1200px;
+    }
+
+    @media (max-width: 768px) {
+      .carousel-container {
+        width: calc(100% - 20px);
+        margin: 12px auto;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .carousel-container {
+        width: calc(100% - 15px);
+        margin: 10px auto;
+      }
+    }
+
+    /* Logo样式 */
+    .carousel-logo-container {
+      text-align: center;
+      margin-bottom: 5px;
+    }
+
+    .carousel-logo {
+      height: 88px;
+      vertical-align: middle;
+      border-radius: 4px;
+    }
+
+    @media (max-width: 480px) {
+      .carousel-logo {
+        height: 40px;
+        padding: 4px;
+      }
+    }
+
+    .carousel {
+      position: relative;
+      overflow: hidden;
+      border-radius: 9px;
+      box-shadow: 
+        0 4px 12px rgba(0, 0, 0, 0.6),
+        0 8px 20px rgba(0, 0, 0, 0.16),
+        0 2px 4px rgba(0, 0, 0, 0.1);
+      height: auto;
+      background: #fff;
+      width: 100%;
+    }
+
+    @media (max-width: 768px) {
+      .carousel {
+        height: 220px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .carousel {
+        height: 179px;
+        min-height: 150px;
+      }
+    }
+
+    .carousel-inner {
+      display: flex;
+      transition: transform 0.5s ease;
+      width: 100%;
+      height: 100%;
+    }
+
+    /* 修改：每屏显示3张图片的容器 */
+    .carousel-item-group {
+      flex: 0 0 100%;
+      width: 100%;
+      height: 100%;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 15px 10px;
+      box-sizing: border-box;
+      background: #f8f8f8;
+    }
+
+    /* 单张图片样式 */
+    .carousel-img-container {
+      flex: 0 0 calc(33.333% - 20px);
+      height: 100%;
+      position: relative;
+      margin: 0 10px;
+    }
+
+    .carousel-img-container img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center;
+      display: block;
+      transition: opacity 0.3s ease, transform 0.3s ease;
+      border-radius: 4px;
+    }
+
+    /* 标题位置改到底部居中 */
+    .carousel-caption {
+      position: absolute;
+      bottom: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      color: white;
+      padding: 5px 10px;
+      z-index: 1;
+      font-size: 14px;
+      font-weight: bold;
+      background: linear-gradient(to bottom right, rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.3));
+      border-radius: 5px;
+      max-width: calc(100% - 20px);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      text-align: center;
+      white-space: nowrap;
+    }
+
+    @media (max-width: 480px) {
+      .carousel-caption {
+        font-size: 12px;
+        padding: 3px 8px;
+      }
+    }
+
+    .carousel-control {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 30px;
+      height: 30px;
+      background-color: rgba(0, 0, 0, 0.5);
+      color: white;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      cursor: pointer;
+      z-index: 2;
+      transition: background-color 0.3s ease;
+      font-size: 18px;
+      font-weight: bold;
+      border-radius: 50%;
+    }
+
+    .carousel-control:hover {
+      background-color: rgba(0, 0, 0, 0.8);
+    }
+
+    .carousel-control-prev {
+      left: 10px;
+    }
+
+    .carousel-control-next {
+      right: 10px;
+    }
+
+    .carousel-indicators {
+      position: absolute;
+      bottom: 15px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      justify-content: center;
+      z-index: 1;
+      gap: 3px;
+    }
+
+    .carousel-indicators span {
+      width: 10px;
+      height: 2px;
+      border: none;
+      cursor: pointer;
+      border-radius: 1px;
+      background-color: #808080;
+      transition: all 0.3s ease;
+    }
+
+    .carousel-indicators span.active {
+      background-color: Lime;
+    }
+
+    .carousel-img-container img:active {
+      opacity: 0.8;
+      transform: scale(0.98);
+    }
+    
+    /* 分类标题样式 */
+    .category-title {
+      font-size: 20px;
+      font-weight: bold;
+      color: #333;
+      margin: 20px 0 10px 15px;
+      padding: 5px 0;
+      border-left:6px solid #22D59C;
+      padding: 0.01px 5;
+    }
+    
+    /* 内容列表容器 */
+    .content-list {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-around;
+      padding: 10px;
+    }
+    
+    /* 内容项 */
+    .content-item {
+      width: calc(33.333% - 20px);
+      margin-bottom: 20px;
+      background: white;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.6);
+      transition: transform 0.3s ease;
+    }
+    
+    .content-item:hover {
+      transform: translateY(-5px);
+    }
+    
+    @media (max-width: 768px) {
+      .content-item {
+        width: calc(50% - 15px);
+      }
+    }
+    
+    @media (max-width: 480px) {
+      .content-item {
+        width: calc(50% - 20px);
+      }
+    }
+    
+    /* 内容图片 */
+    .content-img {
+      width: 100%;
+      height: 228px;
+      object-fit: cover;
+    }
+    
+    /* 内容信息 */
+    .content-info {
+      padding: 5px;
+    }
+    
+    .content-title {
+      font-size: 16px;
+      font-weight: bold;
+      margin-bottom: 1px;
+      color: #333;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    
+    .content-desc {
+      font-size: 14px;
+      color: #666;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* 新增：回到顶部按钮样式 */
+    #backToTopBtn {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      display: none;
+      width: 40px;
+      height: 40px;
+      background-color: #22D59C;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      cursor: pointer;
+      z-index: 100;
+      transition: background-color 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+    }
+
+    #backToTopBtn:hover {
+      background-color: #1aa77d;
+    }
+
+    @media (max-width: 480px) {
+      #backToTopBtn {
+        width: 35px;
+        height: 35px;
+        bottom: 15px;
+        right: 15px;
+        font-size: 16px;
+      }
+    }
+  </style>
+</head> 
+<body>
+  <div class="carousel-container">
+    <div class="carousel-logo-container">
+      <img class="carousel-logo" src="https://www.xmyxjx.com/upload/mxprocms/20250719-1/021fc9aaeb52bfab44f74eb3746b459e.png" alt="蚂蚁影视 Logo" onerror="this.style.display='none'">
+    </div>
+    <div class="carousel"> 
+      <div class="carousel-inner" id="carousel-inner"></div> 
+      <div class="carousel-control carousel-control-prev" id="prevButton" aria-label="Previous Slide">〈</div> 
+      <div class="carousel-control carousel-control-next" id="nextButton" aria-label="Next Slide">〉</div> 
+      <div class="carousel-indicators" id="carousel-indicators"></div> 
+    </div>
+  </div>
+  <!-- 推荐 -->
+  <div class="category-title">热门推荐</div>
+  <div class="content-list" id="zxtj-list"></div>
+  
+  <!-- 电影 -->
+  <div class="category-title">电影</div>
+  <div class="content-list" id="movies-list"></div>
+  
+  <!-- 电视剧 -->
+  <div class="category-title">电视剧</div>
+  <div class="content-list" id="tvshows-list"></div>
+  
+  <!-- 综艺 -->
+  <div class="category-title">综艺</div>
+  <div class="content-list" id="variety-list"></div>
+  
+  <!-- 动漫 -->
+  <div class="category-title">动漫</div>
+  <div class="content-list" id="anime-list"></div>
+  
+  <button id="backToTopBtn" title="回到顶部">🔝</button>
+  
+  <script>
+    // 渲染内容列表的函数
+    function renderContentList(containerId, items) {
+      const container = document.getElementById(containerId);
+      if (!container) return;
+      
+      container.innerHTML = '';
+      
+      items.forEach(item => {
+        const contentItem = document.createElement('div');
+        contentItem.className = 'content-item';
+        contentItem.innerHTML = 
+          '<img class="content-img" src="' + item.img + '" alt="' + item.title + '" onerror="this.src=\'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjE1MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjE1MCIgZmlsbD0iI2RkZCIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTQiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIGZpbGw9IiM5OTkiPlxuICAgIERlZmF1bHQgSW1hZ2VcbiAgPC90ZXh0Pjwvc3ZnPg==\'">' +
+          '<div class="content-info">' +
+            '<div class="content-title" title="' + item.title + '">' + item.title + '</div>' +
+            '<div class="content-desc">' + (item.desc || '') + '</div>' +
+          '</div>';
+        contentItem.addEventListener('click', () => {
+          window.open(item.url, '_blank');
+        });
+        container.appendChild(contentItem);
+      });
+    }
+
+  // 所有逻辑放在 DOM 加载完成后
+  document.addEventListener('DOMContentLoaded', function() {
+    // 渲染内容
+    if (typeof window.zxtjData !== 'undefined') {
+      renderContentList('zxtj-list', window.zxtjData);
+    }
+    if (typeof window.moviesData !== 'undefined') {
+      renderContentList('movies-list', window.moviesData);
+    }
+    if (typeof window.tvshowsData !== 'undefined') {
+      renderContentList('tvshows-list', window.tvshowsData);
+    }
+    if (typeof window.varietyData !== 'undefined') {
+      renderContentList('variety-list', window.varietyData);
+    }
+    if (typeof window.animeData !== 'undefined') {
+      renderContentList('anime-list', window.animeData);
+    }
+
+    // 返回顶部按钮逻辑
+    const backToTopBtn = document.getElementById('backToTopBtn');
+
+    if (backToTopBtn) {
+      // 显示/隐藏按钮
+      window.addEventListener('scroll', () => {
+        if (window.scrollY > 500) {
+          backToTopBtn.style.display = 'flex';
+        } else {
+          backToTopBtn.style.display = 'none';
+        }
+      });
+
+      // 点击事件
+      backToTopBtn.addEventListener('click', () => {
+        window.scrollTo({
+          top: 0,
+          behavior: 'smooth'
+        });
+      });
+    }
+  });
+</script>
+</body>
+</html>
