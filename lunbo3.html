@@ -156,7 +156,8 @@
       transform: translateY(-50%);
       width: 30px;
       height: 30px;
-      background-color: rgba(0, 0, 0, 0.5);
+   // background-color: rgba(0, 0, 0, 0.5);
+      background-color: transparent;
       color: white;
       display: flex;
       justify-content: center;
@@ -166,11 +167,15 @@
       transition: background-color 0.3s ease;
       font-size: 18px;
       font-weight: bold;
-      border-radius: 50%;
+   // border-radius: 50%;
+      border-radius: 0;
+      border: none;
+      outline: none;
     }
 
     .carousel-control:hover {
       background-color: rgba(0, 0, 0, 0.8);
+   // background-color: transparent;
     }
 
     .carousel-control-prev {
@@ -190,6 +195,7 @@
       justify-content: center;
       z-index: 1;
       gap: 3px;
+   // display: none; /* 隐藏整个指示器容器 */
     }
 
     .carousel-indicators span {
@@ -199,6 +205,7 @@
       cursor: pointer;
       border-radius: 1px;
       background-color: #808080;
+    //background-color: transparent;
       transition: all 0.3s ease;
     }
 
