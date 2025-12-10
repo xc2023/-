@@ -1,0 +1,2635 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>精美时钟与天气</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=BenchNine:300,400">
+    <link rel='stylesheet' href='https://fonts.googleapis.com/css?family=Montserrat:400,700'>
+    <link rel='stylesheet' href='https://fonts.googleapis.com/css?family=PT+Mono'>
+    <style>
+        @import url("https://fonts.googleapis.com/css2?family=Cairo&display=swap");
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent; /* 移除移动端点击高亮 */
+            user-select: none; /* 禁止选择文本 */
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+        }
+        
+        /* 允许输入框选择和编辑 */
+        input, textarea {
+            user-select: auto;
+            -webkit-user-select: auto;
+            -moz-user-select: auto;
+            -ms-user-select: auto;
+        }              
+
+body {
+   // background-color: #f5f5f5;
+    background-color: transparent;
+    font-family: "微软雅黑", "Droid Serif", serif;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    min-height: 100vh;
+    gap: 6px;
+    padding: 0 20px; 
+    margin: 0; /* 确保body没有margin */
+    perspective: 800px;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.card:first-child {
+    margin-top: -15px; /* 第一个卡片 */
+}
+
+.card:nth-child(2) { /* 或者 #weather-card */
+    margin-top: -15px; /* 第二个卡片 */
+}
+
+        body::-webkit-scrollbar {
+            display: none; /* 隐藏横向滚动条 */
+        }
+
+        .card {
+            //background-color: #f8f0e9;
+            background-color: transparent;
+            border-radius: 15px;
+           // border: 3px double #bb6b3c;
+            box-shadow: 
+                0 8px 20px rgba(0, 0, 0, 0.08), 
+                0 3px 10px rgba(0, 0, 0, 0.04),
+                inset 0 1px 0 rgba(255, 255, 255, 0.3),
+                inset 0 -1px 0 rgba(0, 0, 0, 0.05); 
+            padding: 0;
+            transition: all 0.3s ease;
+            width: 228px;
+            height: 280px; /* 固定高度确保对齐 */
+            flex-shrink: 0; /* 防止卡片被压缩 */
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            cursor: pointer;
+            margin-top: -15px;
+        }
+
+        .card:hover {
+            transform: translateY(-3px);
+            border-color: #bb6b3c;
+            box-shadow: 
+                0 12px 25px rgba(0, 0, 0, 0.12), 
+                0 5px 15px rgba(0, 0, 0, 0.07),
+                inset 0 1px 0 rgba(255, 255, 255, 0.9),
+                inset 0 -1px 0 rgba(0, 0, 0, 0.08);
+        }
+
+        /* 点击反馈 */
+        .card:active:not(.no-highlight) {
+            background-color: rgba(187, 107, 60, 0.05);
+            transform: translateY(0px) scale(0.98);
+        }
+
+        .card.flipped {
+            transform: rotateY(180deg);
+        }
+
+        .card-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            border-radius: 12px;
+            padding: 15px;
+            left: 0;
+            top: 0;
+            overflow: hidden;
+        }
+
+.card-front {
+        cursor: pointer;
+            background-image: 
+                linear-gradient(45deg, rgba(255,255,255,0.1) 25%, transparent 25%),
+                linear-gradient(-45deg, rgba(255,255,255,0.1) 25%, transparent 25%),
+                linear-gradient(45deg, transparent 75%, rgba(255,255,255,0.1) 75%),
+                linear-gradient(-45deg, transparent 75%, rgba(255,255,255,0.1) 75%);
+            background-size: 8px 8px;           
+          //  background-color: #f8f0e9;
+        //  background-color: transparent;
+            justify-content: center;
+            z-index: 2;
+        }
+
+        .card-back {
+        cursor: pointer;
+            background-image: 
+                linear-gradient(45deg, rgba(255,255,255,0.1) 25%, transparent 25%),
+                linear-gradient(-45deg, rgba(255,255,255,0.1) 25%, transparent 25%),
+                linear-gradient(45deg, transparent 75%, rgba(255,255,255,0.1) 75%),
+                linear-gradient(-45deg, transparent 75%, rgba(255,255,255,0.1) 75%);
+            background-size: 8px 8px;
+           // background-color: #f8f0e9;
+          // background-color: transparent;
+            transform: rotateY(180deg);
+            justify-content: center;
+            z-index: 1;
+            padding: 10px;
+        }
+
+        /* 正面时钟样式 */
+        .clock-face-container {
+            position: relative;
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            overflow: hidden;
+            background: #f8f0e9;
+            box-shadow: 0 0 25px 3px rgba(0, 0, 0, 0.3), 0 0 10px rgba(0, 0, 0, 10.3) inset;
+            transform: scale(1.215) !important;
+            transform-origin: center center;
+         }
+
+        .clock-face-container .spear,
+        .clock-face-container .clock-analog,
+        .clock-face-container .clock-analog .second,
+        .clock-face-container .clock-analog .minute,
+        .clock-face-container .clock-analog .hour,
+        .clock-face-container .clock-analog .dail,
+        .clock-face-container .clock-digital {
+            position: absolute;
+        }
+
+       .clock-face-container .spear {
+            width: 90px;
+            height: 1px;
+            background: red;
+            left: 75%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 200;
+            box-shadow: 0 3px 3px rgba(0, 0, 0, 0.4);
+        }
+
+        .clock-face-container .spear:after {
+            content: '';
+            position: absolute;
+            border: 4px solid transparent;
+            border-right-color: red;
+            right: 0;
+            top: -4px;
+        }
+
+        .clock-face-container .spear:before {
+            content: '';
+            position: absolute;
+            border: 4px solid transparent;
+            border-left-color: red;
+            left: 1px;
+            top: -4px;
+        }
+
+        .clock-face-container .clock-analog {
+            width: 180px;
+            height: 180px;
+            border-radius: 50%;
+            margin: 10px;
+            background: #fff;
+            z-index: 5;
+            box-shadow: 0 0 25px 3px rgba(0, 0, 0, 0.2) inset;
+        }   
+
+        .clock-face-container .clock-analog .second, 
+        .clock-face-container .clock-analog .minute, 
+        .clock-face-container .clock-analog .hour {
+            width: 10px;
+            height: 10px;
+            left: 0;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            margin: auto;
+            z-index: 100;
+            transition: 0.2s 0.2s ease-in;
+            transform: rotate(90deg);
+        }
+
+        .clock-face-container .clock-analog .second span, 
+        .clock-face-container .clock-analog .minute span, 
+        .clock-face-container .clock-analog .hour span {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            line-height: 10px;
+            text-align: center;
+            transform-origin: 50%;
+            z-index: 5;
+            font-size: 8px;
+        }
+
+        .clock-face-container .clock-analog .second span:after, 
+        .clock-face-container .clock-analog .minute span:after, 
+        .clock-face-container .clock-analog .hour span:after {
+            content: '';
+            width: 2px;
+            height: 1px;
+            background: #000;
+            position: absolute;
+            left: 130%;
+            top: -10%;
+            opacity: 0.3;
+        }
+
+        .clock-face-container .clock-analog .second span:nth-child(5n + 2):after, 
+        .clock-face-container .clock-analog .minute span:nth-child(5n + 2):after, 
+        .clock-face-container .clock-analog .hour span:nth-child(5n + 2):after {
+            width: 4px;
+            opacity: 1;
+            left: 110%;
+        }
+
+        .clock-face-container .clock-analog .hour {
+            z-index: 150;
+            font-size: 16px;
+            font-weight: 400;
+        }
+
+        .clock-face-container .clock-analog .hour:after {
+            content: '';
+            background: #fff;
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            width: 105px;
+            height: 105px;
+            border-radius: 50%;
+            box-shadow: 0 0 15px 2px rgba(0, 0, 0, 0.3) inset;
+        }
+
+        .clock-face-container .clock-analog .minute {
+            color: #fff;
+            font-size: 8px;
+        }
+
+        .clock-face-container .clock-analog .minute:after {
+            content: '';
+            background: #333;
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            width: 145px;
+            height: 145px;
+            border-radius: 50%;
+            box-shadow: 0 0 25px 2px rgba(0, 0, 0, 0.4) inset;
+        }
+
+        .clock-face-container .clock-analog .second {
+            font-size: 6px;
+        }
+
+        .clock-face-container .clock-analog .dail {
+            width: 10px;
+            height: 10px;
+            left: 0;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            margin: auto;
+            z-index: 100;
+        }
+
+        .clock-face-container .clock-analog .dail span {
+            width: 10px;
+            height: 10px;
+            line-height: 10px;
+            transform-origin: 50%;
+            text-indent: 1000px;
+            overflow: hidden;
+            position: absolute;
+        }
+
+        .clock-face-container .clock-analog .dail span:after {
+            content: '';
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            border-radius: 50%;
+            background-color: #7d7e7d;
+            background-image: linear-gradient(to right, #7d7e7d 0%, #0e0e0e 100%);
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .clock-face-container .clock-analog .dail span:nth-child(5n + 1):after {
+            width: 4px;
+        }
+
+        .clock-face-container .clock-digital {
+            z-index: 200;
+            height: 185px;
+            width: 93px;
+            background: #090909;
+            left: 8px;
+            top: 8px;
+            border-radius: 110px 0 0 110px;
+            box-shadow: 3px 0 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .clock-face-container .clock-digital:after {
+            content: '';
+            position: absolute;
+            border: 8px solid #8e0a0a;
+            border-right: none;
+            height: 158px;
+            width: 77px;
+            border-radius: 110px 0 0 110px;
+            left: 10px;
+            top: 10px;
+            transform: translate(-2px, -4.8px);
+        }
+
+        .clock-face-container .clock-digital .time {
+            background: #111;
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #fff;
+            border-radius: 25px;
+            font-size: 17px;
+            padding: 1px 8px;
+            box-shadow: 0 0 8px #000 inset;
+            font-family: 'BenchNine', sans-serif;
+        }
+
+        .clock-face-container .clock-digital .day {
+            background: #111;
+            position: absolute;
+            right: 8px;
+            bottom: 42px;
+            color: #fff;
+            border-radius: 10px;
+            box-shadow: 0 0 8px #000 inset;
+            padding: 1px 8px;
+            font-size: 11px;
+            font-family: 'BenchNine', sans-serif;
+        }
+
+        .clock-face-container .clock-digital .date {
+            background: #111;
+            position: absolute;
+            right: 8px;
+            top: 42px;
+            color: #fff;
+            border-radius: 10px;
+            font-size: 12px;
+            box-shadow: 0 0 5px #000 inset;
+            padding: 1px 8px;
+            font-family: 'BenchNine', sans-serif;
+        }
+
+/* 数字时钟特定样式 */
+.flip-clock-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* C字样式 - 初始是半透明发光效果 */
+.flip-clock-title {
+  margin: 0;
+  font-family: 'Montserrat', sans-serif;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 50px;
+  height: 50px;
+  text-align: center;
+  line-height: 50px;
+  font-size: 50px;
+  font-weight: 200;
+  color: rgba(230,230,230,1);
+  text-shadow: 0 0px 50px rgba(255,255,255,.75), 0 0px 150px rgba(255,255,255,0.5), 0 0px 200px rgba(255,255,255,0);
+  transform: translate(-55%, -50%);
+  transform-origin: 50%;
+  cursor: pointer;
+  z-index: 100;
+  transition: all .25s;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* 点击后C字变成透明 */
+.flip-clock-title.off {
+  color: transparent;
+  text-shadow: 0 1px 1px rgba(255,255,255,0.35),
+  0 -1px 1px rgba(0,0,0,0.15);
+}
+
+.flip-clock-title span {
+  font-size: 20px;
+  display: block;
+  position: absolute;
+  top: 0;
+  left: 70px;
+}
+
+/* 时钟表盘 - 初始就有完整的金属表盘 */
+.flip-clock-face {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 180px;
+  height: 180px;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 1;
+  /* 完整的金属表盘样式 */
+  background-image: linear-gradient(60deg, rgba(255,255,255,.05) 0%, rgba(255,255,255,0.7) 40%, rgba(255,255,255,0.5) 45%, rgba(255,255,255,.25) 55%, rgba(255,255,255,.35) 55.5%, rgba(255,255,255,0.3) 60%, rgba(255,255,255,0.2) 68%, rgba(255,255,255,0.1) 72%, rgba(255,255,255,0.25) 75%, rgba(255,255,255,0) 100%), radial-gradient(circle at 50% 10%, rgba(180,180,180,1) 0%, rgba(140,140,140,1) 80%);
+  box-shadow: inset 0 10px 10px 0px rgba(0,0,0,0.35), 
+  inset 0 -3px 1px rgba(222,220,210,1), 
+  0 1px 0 1px rgba(255,255,255,0.5), 
+  0 0 0px 5px rgba(222,98,0,.3), 
+  0 0 0 6px rgba(255,255,255,0.5), 
+  0 30px 50px 20px rgba(0,0,0,0.25);
+}
+
+/* 透明框 */
+ .flip-clock-face::after {
+  content: '';
+  position: absolute;
+  border: 1px solid #000;
+  width: 80px;
+  height: 24px;
+  top: 49.69%;
+  left: 73%;
+  box-shadow: inset 0 0 20px 0px rgba(255,255,255,1), 0 0 100px 1000px rgba(0,0,0,0.75);
+  transform: translate(calc(50% - 40px), -50%);
+  border-radius: 4px;
+}
+
+/* 虚线 */
+.flip-clock-face::before {
+  content: '';
+  position: absolute;
+  border: 1px dashed #000;
+  border-top: 0;
+  border-bottom: 0;
+  width: 25.6px;
+  height: 6.8px;
+  right: -12px;
+  top: 50%;
+  margin: -4.4px 38px 0 0;
+  animation: pulse 1s infinite;
+}
+
+/* 点击后透明框的变化 */
+ .flip-clock-title.off + .flip-clock-face::after {
+  box-shadow: 0 0 100px 1000px rgba(0,0,0,0), 0 0px 1px rgba(0,0,0,0.25);
+  background: linear-gradient(to bottom, rgba(255,255,255,0.65) 10%, rgba(255,255,255,0) 40%, rgba(255,255,255,0) 60%, rgba(255,255,255,.15) 100%);
+  border: 1px solid rgba(0,0,0,0);
+  border-bottom: 1px solid rgba(0,0,0,0.15);
+} 
+
+/* 点击后虚线的变化 */
+.flip-clock-title.off + .flip-clock-face::before {
+  border: 1px dashed rgba(80,80,80,1);
+  border-top: 0;
+  border-bottom: 0;
+  opacity: 1;
+  animation: none;
+}
+
+/* 数字时钟列表样式 */
+.flip-clock-list {
+  position: absolute;
+  margin: 0;
+  padding: 0;
+  top: 50%;
+  left: 50%;
+  width: 16px;
+  height: 16px;
+  list-style: none;
+  margin: -8px 0 0 -8px;
+  z-index: 2;
+}
+
+.flip-clock-list.s,
+.flip-clock-list.m,
+.flip-clock-list.h {
+  transform: rotateZ(0deg);
+  transition: transform .5s linear;
+}
+
+.flip-clock-list li {
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  line-height: 16px;
+  text-align: right;
+  opacity: 0.2;
+  transform-origin: 50%;
+  transition: all .25s linear .25s;
+  font-size: 10px;
+  color: #333333;
+  text-shadow: 0 0px 5px rgba(255,255,255,0.8);
+  font-family: 'PT Mono', monospace;
+}
+
+.flip-clock-list li.active {
+  color: #333333;
+  opacity: 1;
+  font-weight: 80;
+  font-size: 12px;
+  text-shadow: 0 0px 5px rgba(255,255,255,1);
+}
+
+        /* 原样秒表样式 */
+        .stopwatch-container {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .stopwatch {
+            padding: 0.8em;
+            font-size: 1.0vmin;
+            transform: scale(1.16); /* 缩小到80% */
+            transform-origin: center center; /* 从中心缩放 */
+            font-family: sans-serif;
+            filter: drop-shadow(1em 1em 0.3em rgba(0, 0, 0, 0.3));
+            position: relative;
+            --animation-play-state: paused;
+        }
+        
+        .rim {
+            padding: 2em;
+            background: linear-gradient(
+                to bottom right,
+                rgb(155, 155, 155),
+                rgb(196, 196, 196)
+            );
+            box-shadow: inset 1em 1em 2em rgba(255, 255, 255, 0.5),
+                inset -1em -1em 2em rgba(0, 0, 0, 0.8);
+            border-radius: 50%;
+        }
+        
+        .clock-container {
+            border-radius: 50%;
+            display: grid;
+            grid-template-areas: "clock-container-center";
+            border: 0em solid black;
+            background: linear-gradient(to top left, rgb(200, 200, 200), white);
+            box-shadow: inset 0.5em 0.5em 1em rgba(0, 0, 0, 0.8),
+                inset -0.5em -0.5em 1em rgba(255, 255, 255, 0.5);
+            font-family: "Cairo", sans-serif;
+            line-height: 1;
+            position: relative;
+        }
+
+        .clock {
+            grid-area: clock-container-center;
+            width: 22em;
+            aspect-ratio: 1/1;
+            border-radius: 50%;
+            display: grid;
+            grid-template-areas: "sub-clock-container-center";
+            overflow: hidden;
+        }
+        
+        .minutes-clock {
+            font-size: 0.28em;
+            justify-self: center;
+            margin-top: 14%;
+        }
+        
+        .clock > * {
+            grid-area: sub-clock-container-center;
+            width: 100%;
+            height: 100%;
+        }
+
+        .clock > .lines {
+            display: grid;
+            grid-template-areas: "lines-center";
+            place-items: center;
+        }
+        
+        .clock > .lines > .line {
+            grid-area: lines-center;
+            --line-width: 0.1em;
+            --line-length: 1em;
+            width: var(--line-width);
+            height: 100%;
+            background-image: linear-gradient(
+                black var(--line-length),
+                transparent 0 calc(100% - var(--line-length)),
+                black 0
+            );
+            transform: rotate(calc(360deg / 60 * var(--line-idx)));
+        }
+
+        .clock > .lines > div:nth-child(5n + 1) {
+            --line-width: 0.25em;
+            --line-length: 1.5em;
+        }
+
+        .clock > .numbers {
+            display: grid;
+            grid-template-areas: "numbers-center";
+            place-items: center;
+        }
+        
+        .clock > .numbers > .number {
+            grid-area: numbers-center;
+            height: 86%;
+            font-size: 1.5em;
+            --rotate: calc(360deg / 12 * var(--number-idx));
+            transform: rotate(var(--rotate));
+        }
+        
+        .clock > .numbers > .number > div {
+            transform: rotate(calc(-1 * var(--rotate)));
+        }
+
+        .clock > .handle {
+            display: grid;
+            grid-template-areas: "handle-center";
+            place-items: center;
+            z-index: 2;
+            filter: drop-shadow(0.1em 0.1em 0.2em rgba(0, 0, 0, 0.5));
+        }
+
+        .clock > .handle > .pointer {
+            grid-area: handle-center;
+            background-color: #ce3131;
+            width: 0.7em;
+            height: 95%;
+            clip-path: polygon(55% 0%, 100% 60%, 0% 60%, 45% 0);
+            --duration: 60s;
+            --timingFunction: linear;
+            animation: clock-anim var(--duration) var(--timingFunction) infinite;
+            animation-play-state: var(--animation-play-state);
+        }
+
+        .minutes-clock > .handle > .pointer {
+    --duration: 3600s;
+    --timingFunction: steps(60, end);
+    /* 添加这行确保动画应用 */
+    animation: clock-anim var(--duration) var(--timingFunction) infinite;
+    animation-play-state: var(--animation-play-state);
+}
+        
+        @keyframes clock-anim {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+        
+        .clock > .handle > .circle {
+            grid-area: handle-center;
+            background-color: #ce3131;
+            width: 1.3em;
+            aspect-ratio: 1/1;
+            z-index: 1;
+            border-radius: 50%;
+            display: grid;
+            place-content: center;
+        }
+        
+        .clock > .handle > .circle > div {
+            width: 0.7em;
+            aspect-ratio: 1/1;
+            border-radius: 50%;
+            background: linear-gradient(
+                to bottom right,
+                rgb(194, 194, 194),
+                rgba(255, 255, 255, 1)
+            );
+            box-shadow: inset 0.05em 0.05em 0.1em rgba(255, 255, 255, 0.5),
+                inset -0.05em -0.05em 0.1em rgba(0, 0, 0, 0.5),
+                0.1em 0.1em 0.2em rgba(0, 0, 0, 0.5);
+        }
+
+        .clock-container > .glass-overlay {
+            grid-area: clock-container-center;
+            content: "";
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            z-index: 2;
+            background-image: radial-gradient(
+                circle at top left,
+                rgba(255, 255, 255, 0.25) 60%,
+                transparent 60.9%,
+                rgba(0, 0, 0, 0.01)
+            );
+        }
+
+        .buttons {
+            position: absolute;
+            left: 50%;
+            height: 100%;
+            top: 0;
+            transform: translateX(-50%);
+            display: grid;
+            grid-template-areas: "button-container-center";
+            z-index: 3;
+        }
+        
+        .buttons > .button {
+            grid-area: button-container-center;
+            transform: rotate(var(--rotate));
+        }
+
+        .buttons > .button-left {
+            --rotate: -30deg;
+        }
+        
+        .buttons > .button-right {
+            --rotate: 30deg;
+        }
+
+        /* 左按钮默认状态 */
+        .buttons > .button-left > div {
+            --knobColor: #ce3131; /* 红色 */
+            --translateY: 0; /* 弹出状态，完全弹出 */
+            height: 2em; /* 完整高度 */
+            box-shadow: 
+                inset -0.5em 0em 0.25em rgba(0, 0, 0, 0.25),
+                inset 0.5em 0em 0.25em rgba(255, 255, 255, 0.25);
+            transition: all 0.2s ease;
+            background-image: 
+                linear-gradient(var(--knobColor), 0.8em, transparent 0.8em),
+                linear-gradient(
+                    to right,
+                    transparent 0 30%,
+                    rgba(0, 0, 0, 0.3) 30% 70%,
+                    rgba(0, 0, 0, 0.5) 70% 72%,
+                    transparent 70% 100%
+                );
+            background-size: 0.3em 100%;
+            background-position: center;
+            background-color: rgb(200, 200, 200);
+            width: 2em;
+            border-radius: 0.5em;
+            cursor: pointer;
+        }
+
+        /* 左按钮按下状态 - 实现下沉效果 */
+        .buttons > .button-left.pressed > div {
+            --translateY: 0.5em; /* 向下移动0.5em表示按下 */
+            height: 1.5em; /* 减少0.5em高度，截掉下沉部分 */
+            box-shadow: 
+                inset -0.5em 0em 0.4em rgba(0, 0, 0, 0.3),
+                inset 0.5em 0em 0.2em rgba(255, 255, 255, 0.2),
+                inset 0 0.3em 0.4em rgba(0, 0, 0, 0.25);
+        }
+
+        /* 左按钮点击反馈动画 */
+        .buttons > .button-left:active > div {
+            --translateY: 0.6em; /* 点击时更深的下沉 */
+            height: 1.4em; /* 点击时进一步减少高度 */
+            animation: resetButtonPress 0.3s ease-out;
+        }
+
+        /* 重置按钮回弹动画 */
+        @keyframes resetButtonPress {
+            0% {
+                --translateY: 0;
+                height: 2em;
+                box-shadow: 
+                    inset -0.5em 0em 0.25em rgba(0, 0, 0, 0.25),
+                    inset 0.5em 0em 0.25em rgba(255, 255, 255, 0.25);
+            }
+            50% {
+                --translateY: 0.6em;
+                height: 1.4em;
+                box-shadow: 
+                    inset -0.5em 0em 0.4em rgba(0, 0, 0, 0.3),
+                    inset 0.5em 0em 0.2em rgba(255, 255, 255, 0.2),
+                    inset 0 0.3em 0.4em rgba(0, 0, 0, 0.25);
+            }
+            100% {
+                --translateY: 0;
+                height: 2em;
+                box-shadow: 
+                    inset -0.5em 0em 0.25em rgba(0, 0, 0, 0.25),
+                    inset 0.5em 0em 0.25em rgba(255, 255, 255, 0.25);
+            }
+        }
+        
+/* 右按钮默认状态（弹出/停止）- 红色完整高度 */
+.buttons > .button-right > div {
+    --knobColor: #ce3131; /* 红色 */
+    --translateY: 0; /* 弹出状态，完全弹出 */
+    height: 2em; /* 完整高度 */
+    box-shadow: 
+        inset -0.5em 0em 0.25em rgba(0, 0, 0, 0.25),
+        inset 0.5em 0em 0.25em rgba(255, 255, 255, 0.25);
+    transition: all 0.2s ease;
+}
+
+/* 右按钮运行状态（按下/开始）- 绿色，截掉下沉部分 */
+.stopwatch.running .buttons > .button-right > div {
+    --knobColor: rgb(4, 97, 4); /* 绿色 */
+    --translateY: 0.5em; /* 向下移动0.5em表示按下 */
+    height: 1.5em; /* 减少0.5em高度，截掉下沉部分 */
+    /* 调整背景渐变，使绿色部分占据整个按钮高度 */
+    background-image: 
+        linear-gradient(var(--knobColor), 0.8em, transparent 0.8em),
+        linear-gradient(
+            to right,
+            transparent 0 30%,
+            rgba(0, 0, 0, 0.3) 30% 70%,
+            rgba(0, 0, 0, 0.5) 70% 72%,
+            transparent 70% 100%
+        );
+    /* 调整阴影，增强凹陷感 */
+    box-shadow: 
+        inset -0.5em 0em 0.4em rgba(0, 0, 0, 0.3),
+        inset 0.5em 0em 0.2em rgba(255, 255, 255, 0.2),
+        inset 0 0.3em 0.4em rgba(0, 0, 0, 0.25);
+}
+
+/* 按钮点击反馈 */
+.stopwatch .buttons .button-right:active > div {
+    --translateY: 0.6em; /* 点击时更深的下沉 */
+    height: 1.4em; /* 点击时进一步减少高度 */
+}
+
+        /* 七天预报容器 */
+        .week-forecast {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .week-title {
+            font-size: 20px;
+            color: #bb6b3c;
+            font-weight: bold;
+            margin-bottom: 8px;
+            text-align: center;
+        }
+
+        .forecast-list {
+            width: 100%;
+            flex-grow: 1;
+            overflow-y: auto;
+            padding-right: 5px;
+            -webkit-overflow-scrolling: touch; /* 移动端平滑滚动 */
+            scrollbar-width: thin;
+            touch-action: pan-y; /* 明确触摸行为 */
+        }
+
+        .forecast-list::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .forecast-list::-webkit-scrollbar-track {
+            background: rgba(0,0,0,0.05);
+            border-radius: 2px;
+        }
+
+        .forecast-list::-webkit-scrollbar-thumb {
+            background: #bb6b3c;
+            border-radius: 2px;
+        }
+
+        .forecast-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 6px 5px;
+            border-bottom: 1px dashed #d9c3b0;
+            min-height: 35px;
+            touch-action: none; /* 防止触摸冲突 */
+        }
+        
+        .location-container {
+            width: 100%;
+            position: relative;
+            text-align: center;
+            margin-bottom: 5px;
+            height: 30px;
+        }
+
+        #location-input {
+            width: 100%;
+            padding: 6px 8px;
+            border: 2px solid #bb6b3c;
+            border-radius: 8px;
+            background-color: rgba(255, 255, 255, 0.8);
+            font-size: 12px;
+            color: #585858;
+            box-sizing: border-box;
+            text-align: center;
+            outline: none;
+            transition: all 0.2s ease;
+            display: none;
+        }
+
+        #location-input.active {
+            display: block;
+        }
+
+        #location-display {
+            font-size: 22px;
+            color: #bb6b3c;
+            font-weight: bold;
+            cursor: pointer;
+            padding: -31px 0;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+            overflow: hidden;
+            position: relative;
+            width: 100%;
+            height: 24px;
+            line-height: 24px;
+        }
+
+        #location-display.scroll {
+            animation: scrollText 10s linear infinite;
+        }
+
+        @keyframes scrollText {
+            0% { transform: translateX(100%); }
+            100% { transform: translateX(-100%); }
+        }
+
+        .weather-content {
+            text-align: center;
+            width: 100%;
+            height: calc(100% - 35px);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .weather-icon {
+            font-size: 43px;
+            margin: 5px 0;
+            color: #bb6b3c;
+        }
+
+        .temperature {
+            font-size: 28px;
+            font-weight: bold;
+            color: #585858;
+            margin-bottom: -8px;
+        }
+
+        .weather-status {
+            font-size: 19px;
+            color: #775838;
+            margin-bottom: 8px;
+        }
+
+        .weather-info {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            font-size: 10px;
+            color: #777;
+            padding: 15px; 3px;
+            box-sizing: border-box;
+            margin-top: 12px;
+        }
+
+        .weather-detail {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .detail-label {
+            margin-bottom: 12px;
+            font-size: 12px;
+            color: #999;
+        }
+
+        .loading, .error {
+            font-size: 12px;
+            margin: 10px 0;
+        }
+
+        .loading { color: #775838; }
+        .error { color: #ad4e33; display: none; }
+
+        .forecast-date {
+            font-size: 11px;
+            color: #775838;
+            width: 60px;
+        }
+
+        .forecast-weather {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 110px;
+        }
+
+        .forecast-icon {
+            font-size: 18px;
+            width: 25px;
+            text-align: center;
+        }
+
+        .forecast-temp {
+            font-size: 11px;
+            color: #585858;
+            width: 50px;
+            text-align: center;
+        }
+
+        .forecast-desc {
+            font-size: 9px;
+            color: #777;
+            width: 45px;
+            text-align: center;
+        }
+
+@media (max-width: 600px) {
+    body {
+        padding: 0px 6px;
+        justify-content: flex-start; /* 从左侧开始排列 */
+        min-height: calc(100vh -15px);
+    }
+    
+    .card {
+        background-color: transparent;
+        transform: scale(0.6); /* 稍微缩小卡片 */
+        margin: 0 -15px;
+    }
+    
+    /* 修复翻转时丢失缩放的问题 - 确保两个状态都有相同的缩放 */
+    .card.flipped {
+        transform: scale(0.8) rotateY(180deg);
+    }
+    
+    .clock-face-container {
+        transform: scale(0.5);
+    }
+    
+    /* 修复秒表在手机端的显示问题 */
+    .stopwatch {
+        font-size: 1.76vmin; /* 增大秒表整体尺寸 */
+        padding: 0.5em; /* 调整内边距 */
+    }
+    
+    /* 放大秒表内部表盘 */
+    .clock {
+        width: 40em; /* 增大表盘尺寸 */
+    }
+    
+    /* 调整分钟表盘大小 - 更小 */
+    .minutes-clock {
+        font-size: 0.52em; /* 进一步减小分钟表盘 */
+        margin-top: 13%; /* 调整分钟表盘位置 */
+    }
+    
+    /* 主表数字保持较大 */
+    .clock > .numbers > .number {
+        font-size: 1.6em; /* 秒表数字较大 */
+    }
+    
+    /* 调整指针大小 */
+    .clock > .handle > .pointer {
+        width: 0.8em; /* 增大指针宽度 */
+    }
+    
+    /* 修复按钮位置问题 - 确保在同一水平线上 */
+    .buttons {
+        position: absolute;
+        left: 52%;
+        height: 102%; /* 恢复高度100% */
+        top: 0;
+        transform: translateX(-88%);
+        display: grid;
+        grid-template-areas: "button-container-center";
+        place-items: center start; /* 确保按钮水平对齐 */
+        z-index: 3;
+    }
+    
+    /* 调整按钮位置 */
+    .buttons > .button {
+        grid-area: button-container-center;
+        transform: rotate(var(--rotate)) translateY(-102.7px); /* 向上移动20px并保持旋转 */
+    }
+
+    .buttons > .button-left {
+        --rotate: -30deg;
+    }
+    
+    .buttons > .button-right {
+        --rotate: 30deg;
+    }
+    
+    /* 确保两个按钮在同一水平线上 */
+    .buttons > .button-left,
+    .buttons > .button-right {
+        transform-origin: center center; /* 确保旋转中心一致 */
+    }
+    
+    .buttons > .button > div {
+        transform: translateY(var(--translateY, 0)); /* 移除默认的向上偏移 */
+        background: rgb(200, 200, 200);
+        width: 2em;
+        height: 2em;
+        border-radius: 0.5em;
+        --knobColor: #ce3131;
+        background-image: linear-gradient(var(--knobColor), 0.5em, transparent 0.5em),
+            linear-gradient(
+                to right,
+                transparent 0 30%,
+                rgba(0, 0, 0, 0.3) 30% 70%,
+                rgba(0, 0, 0, 0.5) 70% 72%,
+                transparent 70% 100%
+            );
+        background-size: 0.3em 100%;
+        background-position: center;
+        box-shadow: inset -0.5em 0em 0.25em rgba(0, 0, 0, 0.25),
+            inset 0.5em 0em 0.25em rgba(255, 255, 255, 0.25);
+        cursor: pointer;
+    }
+    
+    /* 数字时钟整体放大 */
+    .flip-clock-container {
+        transform: scale(1.45); /* 整体放大10% */
+        transform-origin: center center;
+    }
+    
+    /* 或者分别调整各个部件的大小 */
+    .flip-clock-title {
+        font-size: 50px; /* 从80px放大到90px */
+        width: 50px;
+        height: 50px;
+        line-height: 50px;
+        top: 50%;
+        left: 50%;
+        transform: translate(-55%, -50%);
+    }
+    
+    .flip-clock-title span {
+        font-size: 4px; /* 从16px放大到18px */
+        left: 23.8px; /* 根据放大比例调整位置 */
+    }
+    
+    .flip-clock-face {
+        width: 165px; /* 从150px放大到165px */
+        height: 165px; /* 从150px放大到165px */
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+    }
+    
+    /* 调整透明框大小 */
+    .flip-clock-face::after {
+        width: 58px; /* 从60px放大到66px */
+        height: 16px; /* 从18px放大到20px */
+        top: 49.69%;
+        left: 65%;
+        transform: translate(calc(50% - 33px), -50%);
+    }
+    
+    .flip-clock-face::before {
+        width: 19px; /* 从20px放大到22px */
+        height: 6px; /* 从6px放大到6.6px */
+        margin: -3.7px 33px 0 0; /* 调整位置 */
+    }
+    
+    /* 调整数字大小和位置 */
+    .flip-clock-list li {
+        font-size: 6px; /* 从10px放大到11px */
+    }
+    
+    /* 调整数字位置 */
+    .flip-clock-list.s,
+    .flip-clock-list.m,
+    .flip-clock-list.h {
+        transform: scale(1.12); /* 数字列表整体放大 */
+    }
+    
+    /* 确保数字时钟卡片不会超出边界 */
+    #clock-card .card-front {
+        overflow: visible;
+    }
+}
+/* 最快速解决方案 - 直接覆盖 */
+.clock-face-container {
+    opacity: 0.92;
+    filter: drop-shadow(0 3px 5px rgba(0,0,0,0.05)) 
+            brightness(0.96) 
+            contrast(0.98);
+}
+
+.clock-face-container .clock-analog {
+    background: rgba(252, 248, 242, 0.98) !important;
+}
+
+.clock-face-container .clock-digital {
+    opacity: 0.88;
+}
+    </style>
+</head>
+    
+<body>
+    <!-- 时钟卡片（正面时钟，背面秒表） -->
+    <div class="card" id="clock-card">
+        <div class="card-face card-front">
+            <div class="clock-face-container">
+                <div class="clock-digital">
+                    <div class="date"></div>
+                    <div class="time"></div>
+                    <div class="day"></div>
+                </div>
+                <div class="clock-analog">
+                    <div class="spear"></div>
+                    <div class="hour"></div>
+                    <div class="minute"></div>
+                    <div class="second"></div>
+                    <div class="dail"></div>
+                </div>
+            </div>
+        </div>
+        <div class="card-face card-back">
+            <div class="stopwatch-container">
+                <div class="stopwatch">
+                    <div class="buttons">
+                        <div class="button button-left" title="重置">
+                            <div></div>
+                        </div>
+                        <div class="button button-right" title="开始/停止">
+                            <div></div>
+                        </div>
+                    </div>
+                    <div class="rim">
+                        <div class="clock-container">
+                            <div class="clock minutes-clock">
+                                <div class="lines">
+                                    <!-- 分钟刻度线 -->
+                                    <div class="line" style="--line-idx:0"></div>
+                                    <div class="line" style="--line-idx:1"></div>
+                                    <div class="line" style="--line-idx:2"></div>
+                                    <div class="line" style="--line-idx:3"></div>
+                                    <div class="line" style="--line-idx:4"></div>
+                                    <div class="line" style="--line-idx:5"></div>
+                                    <div class="line" style="--line-idx:6"></div>
+                                    <div class="line" style="--line-idx:7"></div>
+                                    <div class="line" style="--line-idx:8"></div>
+                                    <div class="line" style="--line-idx:9"></div>
+                                    <div class="line" style="--line-idx:10"></div>
+                                    <div class="line" style="--line-idx:11"></div>
+                                    <div class="line" style="--line-idx:12"></div>
+                                    <div class="line" style="--line-idx:13"></div>
+                                    <div class="line" style="--line-idx:14"></div>
+                                    <div class="line" style="--line-idx:15"></div>
+                                    <div class="line" style="--line-idx:16"></div>
+                                    <div class="line" style="--line-idx:17"></div>
+                                    <div class="line" style="--line-idx:18"></div>
+                                    <div class="line" style="--line-idx:19"></div>
+                                    <div class="line" style="--line-idx:20"></div>
+                                    <div class="line" style="--line-idx:21"></div>
+                                    <div class="line" style="--line-idx:22"></div>
+                                    <div class="line" style="--line-idx:23"></div>
+                                    <div class="line" style="--line-idx:24"></div>
+                                    <div class="line" style="--line-idx:25"></div>
+                                    <div class="line" style="--line-idx:26"></div>
+                                    <div class="line" style="--line-idx:27"></div>
+                                    <div class="line" style="--line-idx:28"></div>
+                                    <div class="line" style="--line-idx:29"></div>
+                                </div>
+                                <div class="numbers">
+                                    <!-- 分钟数字 -->
+                                    <div class="number" style="--number-idx:0">
+                                        <div>60</div>
+                                    </div>
+                                    <div class="number" style="--number-idx:1">
+                                        <div>5</div>
+                                    </div>
+                                    <div class="number" style="--number-idx:2">
+                                        <div>10</div>
+                                    </div>
+                                    <div class="number" style="--number-idx:3">
+                                        <div>15</div>
+                                    </div>
+                                    <div class="number" style="--number-idx:4">
+                                        <div>20</div>
+                                    </div>
+                                    <div class="number" style="--number-idx:5">
+                                        <div>25</div>
+                                    </div>
+                                    <div class="number" style="--number-idx:6">
+                                        <div>30</div>
+                                    </div>
+                                    <div class="number" style="--number-idx:7">
+                                        <div>35</div>
+                                    </div>
+                                    <div class="number" style="--number-idx:8">
+                                        <div>40</div>
+                                    </div>
+                                    <div class="number" style="--number-idx:9">
+                                        <div>45</div>
+                                    </div>
+                                    <div class="number" style="--number-idx:10">
+                                        <div>50</div>
+                                    </div>
+                                    <div class="number" style="--number-idx:11">
+                                        <div>55</div>
+                                    </div>
+                                </div>
+                                <div class="handle">
+                                    <div class="pointer"></div>
+                                    <div class="circle">
+                                        <div></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="clock seconds-clock">
+                                <div class="lines">
+                                    <!-- 秒刻度线 -->
+                                    <div class="line" style="--line-idx:0"></div>
+                                    <div class="line" style="--line-idx:1"></div>
+                                    <div class="line" style="--line-idx:2"></div>
+                                    <div class="line" style="--line-idx:3"></div>
+                                    <div class="line" style="--line-idx:4"></div>
+                                    <div class="line" style="--line-idx:5"></div>
+                                    <div class="line" style="--line-idx:6"></div>
+                                    <div class="line" style="--line-idx:7"></div>
+                                    <div class="line" style="--line-idx:8"></div>
+                                    <div class="line" style="--line-idx:9"></div>
+                                    <div class="line" style="--line-idx:10"></div>
+                                    <div class="line" style="--line-idx:11"></div>
+                                    <div class="line" style="--line-idx:12"></div>
+                                    <div class="line" style="--line-idx:13"></div>
+                                    <div class="line" style="--line-idx:14"></div>
+                                    <div class="line" style="--line-idx:15"></div>
+                                    <div class="line" style="--line-idx:16"></div>
+                                    <div class="line" style="--line-idx:17"></div>
+                                    <div class="line" style="--line-idx:18"></div>
+                                    <div class="line" style="--line-idx:19"></div>
+                                    <div class="line" style="--line-idx:20"></div>
+                                    <div class="line" style="--line-idx:21"></div>
+                                    <div class="line" style="--line-idx:22"></div>
+                                    <div class="line" style="--line-idx:23"></div>
+                                    <div class="line" style="--line-idx:24"></div>
+                                    <div class="line" style="--line-idx:25"></div>
+                                    <div class="line" style="--line-idx:26"></div>
+                                    <div class="line" style="--line-idx:27"></div>
+                                    <div class="line" style="--line-idx:28"></div>
+                                    <div class="line" style="--line-idx:29"></div>
+                                </div>
+                                <div class="numbers">
+                                    <!-- 秒数字 -->
+                                    <div class="number" style="--number-idx:0">
+                                        <div>60</div>
+                                    </div>
+                                    <div class="number" style="--number-idx:1">
+                                        <div>5</div>
+                                    </div>
+                                    <div class="number" style="--number-idx:2">
+                                        <div>10</div>
+                                    </div>
+                                    <div class="number" style="--number-idx:3">
+                                        <div>15</div>
+                                    </div>
+                                    <div class="number" style="--number-idx:4">
+                                        <div>20</div>
+                                    </div>
+                                    <div class="number" style="--number-idx:5">
+                                        <div>25</div>
+                                    </div>
+                                    <div class="number" style="--number-idx:6">
+                                        <div>30</div>
+                                    </div>
+                                    <div class="number" style="--number-idx:7">
+                                        <div>35</div>
+                                    </div>
+                                    <div class="number" style="--number-idx:8">
+                                        <div>40</div>
+                                    </div>
+                                    <div class="number" style="--number-idx:9">
+                                        <div>45</div>
+                                    </div>
+                                    <div class="number" style="--number-idx:10">
+                                        <div>50</div>
+                                    </div>
+                                    <div class="number" style="--number-idx:11">
+                                        <div>55</div>
+                                    </div>
+                                </div>
+                                <div class="handle">
+                                    <div class="pointer"></div>
+                                    <div class="circle">
+                                        <div></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="glass-overlay"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 天气卡片（正面当前天气，背面七天预报） -->
+    <div class="card" id="weather-card">
+        <div class="card-face card-front">
+            <div class="location-container">
+                <input type="text" id="location-input" placeholder="输入城市名称">
+                <div id="location-display">北京市</div>
+            </div>
+            <div class="weather-content">
+                <div class="loading" id="weather-loading">加载天气数据中...</div>
+                <div class="error" id="weather-error">加载失败</div>
+                <div class="weather-icon" id="weather-icon">☀️</div>
+                <div class="weather-status" id="weather-status">晴朗</div>
+                <div class="temperature" id="temperature">25°C</div>
+                <div class="weather-info" id="weather-info">
+                    <div class="weather-detail">
+                        <div class="detail-label">湿度</div>
+                        <div id="humidity">45%</div>
+                    </div>
+                    <div class="weather-detail">
+                        <div class="detail-label">风力</div>
+                        <div id="wind">2级</div>
+                    </div>
+                    <div class="weather-detail">
+                        <div class="detail-label">气压</div>
+                        <div id="pressure">1013 hPa</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="card-face card-back">
+            <div class="week-forecast">
+                <div class="week-title">七天天气预报</div>
+                <div class="forecast-list" id="forecast-list">
+                    <!-- 动态生成内容 -->
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+    <script>
+       // 时钟功能
+    (function() {
+        const clockTypes = [
+            {
+                name: "经典模拟时钟",
+                template: `
+                    <div class="clock-face-container">
+                        <div class="clock-digital">
+                            <div class="date"></div>
+                            <div class="time"></div>
+                            <div class="day"></div>
+                        </div>
+                        <div class="clock-analog">
+                            <div class="spear"></div>
+                            <div class="hour"></div>
+                            <div class="minute"></div>
+                            <div class="second"></div>
+                            <div class="dail"></div>
+                        </div>
+                    </div>
+                `
+            },
+            {
+    name: "数字时钟",
+    template: `
+        <div class="flip-clock-container">
+            <h1 class="flip-clock-title off">C<span>LOCK</span></h1>
+            <div class="flip-clock-face">
+                <ul class="flip-clock-list s"></ul>
+                <ul class="flip-clock-list m"></ul>
+                <ul class="flip-clock-list h"></ul>
+            </div>
+        </div>
+    `
+},
+            {
+                name: "极简时钟",
+                template: `
+                    <div class="minimal-clock">
+                        <div class="minimal-time"></div>
+                        <div class="minimal-date"></div>
+                    </div>
+                `
+            }
+        ];
+
+        // 添加时钟样式CSS
+        const clockStyles = document.createElement('style');
+        clockStyles.innerHTML = `
+            .minimal-clock {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                width: 100%;
+                height: 100%;
+            }
+            
+            .minimal-time {
+                font-size: 42px;
+                font-weight: lighter;
+                color: #333;
+                font-family: 'Cairo', sans-serif;
+                letter-spacing: 2px;
+            }
+            
+            .minimal-date {
+                font-size: 14px;
+                color: #999;
+                margin-top: 8px;
+                font-family: 'Cairo', sans-serif;
+            }
+        `;
+        document.head.appendChild(clockStyles);
+
+        // 全局变量
+        let clockTypeIndex = 0;
+        let clockUpdateInterval = null;
+        let flipClockInterval = null;
+
+        // Flip Clock 相关变量
+        let flipTotalSeconds = 0;
+        let flipTotalMinutes = 0;
+        let flipTotalHours = 0;
+
+        // 从本地存储获取时钟类型
+        function getSavedClockType() {
+            const savedIndex = localStorage.getItem('clockTypeIndex');
+            if (savedIndex !== null) {
+                const index = parseInt(savedIndex, 10);
+                if (!isNaN(index) && index >= 0 && index < clockTypes.length) {
+                    return index;
+                }
+            }
+            return 0; // 默认值
+        }
+
+        // 保存时钟类型到本地存储
+        function saveClockType(index) {
+            localStorage.setItem('clockTypeIndex', index);
+        }
+
+        // 初始化时钟系统
+        function initClockSystem() {
+            // 获取保存的时钟类型
+            clockTypeIndex = getSavedClockType();
+            
+            // 清空所有可能的更新定时器
+            if (clockUpdateInterval) {
+                clearInterval(clockUpdateInterval);
+                clockUpdateInterval = null;
+            }
+            
+            if (flipClockInterval) {
+                clearInterval(flipClockInterval);
+                flipClockInterval = null;
+            }
+            
+            // 更新时钟显示
+            updateClockDisplay();
+            
+            console.log('时钟系统初始化，类型:', clockTypeIndex, '名称:', clockTypes[clockTypeIndex].name);
+        }
+
+        // 更新时钟显示
+        function updateClockDisplay() {
+            const clockFront = document.querySelector('#clock-card .card-front');
+            if (!clockFront) return;
+            
+            const type = clockTypes[clockTypeIndex];
+            clockFront.innerHTML = type.template;
+            
+            // 根据时钟类型初始化对应的时钟功能
+            if (clockTypeIndex === 0) {
+                initAnalogClock();
+                startAnalogClock();
+            } else if (clockTypeIndex === 1) {
+                initDigitalClock();
+                startDigitalClock();
+            } else if (clockTypeIndex === 2) {
+                initMinimalClock();
+                startMinimalClock();
+            }
+        }
+
+        // 启动模拟时钟更新
+        function startAnalogClock() {
+            if (clockUpdateInterval) {
+                clearInterval(clockUpdateInterval);
+            }
+            
+            updateAnalogClock(); // 立即更新一次
+            clockUpdateInterval = setInterval(updateAnalogClock, 1000);
+        }
+
+            // 模拟时钟初始化
+    function initAnalogClock() {
+        // 清空现有的元素
+        const secondEl = document.querySelector('.second');
+        const minuteEl = document.querySelector('.minute');
+        const hourEl = document.querySelector('.hour');
+        const dailEl = document.querySelector('.dail');
+        
+        if (secondEl) secondEl.innerHTML = '';
+        if (minuteEl) minuteEl.innerHTML = '';
+        if (hourEl) hourEl.innerHTML = '';
+        if (dailEl) dailEl.innerHTML = '';
+        
+        // 创建刻度
+        const dailer = function(selector, size) {
+            const element = document.querySelector(selector);
+            if (!element) return;
+            
+            for (let s = 0; s < 60; s++) {
+                const span = document.createElement('span');
+                span.style.transform = `rotate(${6 * s}deg) translateX(${size}px)`;
+                span.textContent = s;
+                element.appendChild(span);
+            }
+        };
+
+        dailer('.second', 82);
+        dailer('.minute', 61);
+        dailer('.dail', 96);
+
+        // 创建小时刻度
+        const hourElement = document.querySelector('.hour');
+        if (hourElement) {
+            for (let s = 1; s < 13; s++) {
+                const span = document.createElement('span');
+                span.style.transform = `rotate(${30 * s}deg) translateX(42px)`;
+                span.textContent = s;
+                hourElement.appendChild(span);
+            }
+        }
+    }
+
+// 更新模拟时钟 - 修复循环转动
+function updateAnalogClock() {
+    const date = new Date();
+    const midnight = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    const msSinceMidnight = date - midnight;
+    
+    // 计算累计旋转角度（负值表示顺时针）
+    const ds = -(msSinceMidnight / 1000) * 6;
+    const dm = -(msSinceMidnight / 1000 / 60) * 6;
+    const dh = -(msSinceMidnight / 1000 / 60 / 60) * 30;
+
+    // 更新指针
+    const secondEl = document.querySelector('.second');
+    const minuteEl = document.querySelector('.minute');
+    const hourEl = document.querySelector('.hour');
+    
+    if (secondEl) secondEl.style.transform = `rotate(${ds}deg)`;
+    if (minuteEl) minuteEl.style.transform = `rotate(${dm}deg)`;
+    if (hourEl) hourEl.style.transform = `rotate(${dh}deg)`;
+
+    // 更新时间显示（保持不变）
+    const timeElement = document.querySelector('.time');
+    const dayElement = document.querySelector('.day');
+    const dateElement = document.querySelector('.date');
+    
+    if (timeElement) {
+        timeElement.textContent = date.toLocaleString('zh-CN', { 
+            hour: 'numeric', 
+            minute: 'numeric', 
+            hour12: false 
+        });
+    }
+    
+    if (dayElement) {
+        const days = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
+        dayElement.textContent = days[date.getDay()];
+    }
+    
+    if (dateElement) {
+        const months = ["1月", "2月", "3月", "4月", "5月", "6月",
+            "7月", "8月", "9月", "10月", "11月", "12月"];
+        dateElement.textContent = `${date.getDate()} . ${months[date.getMonth()]}`;
+    }
+}
+
+        // 数字时钟初始化
+function initDigitalClock() {
+    // 清空现有内容
+    const sList = document.querySelector('.flip-clock-list.s');
+    const mList = document.querySelector('.flip-clock-list.m');
+    const hList = document.querySelector('.flip-clock-list.h');
+    
+    if (sList) sList.innerHTML = '';
+    if (mList) mList.innerHTML = '';
+    if (hList) hList.innerHTML = '';
+    
+    // 创建秒刻度
+    for (let i = 0; i < 60; i++) {
+        const li = document.createElement('li');
+        li.setAttribute('data-item', i < 10 ? '0' + i : i);
+        li.textContent = i < 10 ? '0' + i : i;
+        sList.appendChild(li);
+    }
+    
+    // 创建分钟刻度
+    for (let i = 0; i < 60; i++) {
+        const li = document.createElement('li');
+        li.setAttribute('data-item', i < 10 ? '0' + i : i);
+        li.textContent = i < 10 ? '0' + i : i;
+        mList.appendChild(li);
+    }
+    
+    // 创建小时刻度
+    for (let i = 0; i < 24; i++) {
+        const li = document.createElement('li');
+        li.setAttribute('data-item', i < 10 ? '0' + i : i);
+        li.textContent = i < 10 ? '0' + i : i;
+        hList.appendChild(li);
+    }
+    
+    placeFlipClock();
+    
+    // 添加标题点击事件 - 改进版本
+    setTimeout(() => {
+        const title = document.querySelector('.flip-clock-title');
+        if (title) {
+            // 处理鼠标点击事件
+            title.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                this.classList.toggle('off');
+            });
+            
+            // 处理触摸事件 - 关键修改
+            let touchStartTime = 0;
+            
+            title.addEventListener('touchstart', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                touchStartTime = Date.now();
+            });
+            
+            title.addEventListener('touchmove', function(e) {
+                e.stopPropagation();
+            });
+            
+            title.addEventListener('touchend', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                // 只有短触摸才触发效果（避免滚动时误触）
+                if (Date.now() - touchStartTime < 300) {
+                    this.classList.toggle('off');
+                }
+            });
+        }
+    }, 100);
+}
+
+       function placeFlipClock() {
+    const hdeg = 15;
+    const msdeg = 6;
+    const clockSize = 180; // 固定大小以匹配CSS
+    const sTranslate = (clockSize / 2) - 20;
+    const mTranslate = (clockSize / 2) - 40;
+    const hTranslate = (clockSize / 2) - 60;
+
+    const sItems = document.querySelectorAll('.flip-clock-list.s li');
+    const mItems = document.querySelectorAll('.flip-clock-list.m li');
+    const hItems = document.querySelectorAll('.flip-clock-list.h li');
+
+    sItems.forEach((item, index) => {
+        item.style.transform = `rotateZ(${msdeg * index}deg) translateX(${sTranslate}px)`;
+    });
+    
+    mItems.forEach((item, index) => {
+        item.style.transform = `rotateZ(${msdeg * index}deg) translateX(${mTranslate}px)`;
+    });
+    
+    hItems.forEach((item, index) => {
+        item.style.transform = `rotateZ(${hdeg * index}deg) translateX(${hTranslate}px)`;
+    });
+}
+
+        // 初始化实时时间
+        function initFlipClockRealTime() {
+            const now = new Date();
+            flipTotalSeconds = now.getSeconds();
+            flipTotalMinutes = now.getMinutes() + now.getHours() * 60;
+            flipTotalHours = now.getHours();
+
+            // 初始化各指针位置
+            const sList = document.querySelector('.flip-clock-list.s');
+            const mList = document.querySelector('.flip-clock-list.m');
+            const hList = document.querySelector('.flip-clock-list.h');
+            
+            if (sList) sList.style.transform = `rotateZ(-${flipTotalSeconds * 6}deg)`;
+            if (mList) mList.style.transform = `rotateZ(-${flipTotalMinutes * 6}deg)`;
+            if (hList) hList.style.transform = `rotateZ(-${flipTotalHours * 15}deg)`;
+
+            // 初始化激活状态
+            const secIndex = flipTotalSeconds % 60;
+            const minIndex = flipTotalMinutes % 60;
+            const hourIndex = flipTotalHours % 24;
+            
+            const sItems = document.querySelectorAll('.flip-clock-list.s li');
+            const mItems = document.querySelectorAll('.flip-clock-list.m li');
+            const hItems = document.querySelectorAll('.flip-clock-list.h li');
+            
+            sItems.forEach(item => item.classList.remove('active'));
+            mItems.forEach(item => item.classList.remove('active'));
+            hItems.forEach(item => item.classList.remove('active'));
+            
+            if (sItems[secIndex]) sItems[secIndex].classList.add('active');
+            if (mItems[minIndex]) mItems[minIndex].classList.add('active');
+            if (hItems[hourIndex]) hItems[hourIndex].classList.add('active');
+        }
+
+        // 秒针更新
+        function updateFlipClockSeconds() {
+            flipTotalSeconds++;
+            const currentSec = flipTotalSeconds % 60;
+            const rotateDeg = flipTotalSeconds * 6;
+            
+            const sList = document.querySelector('.flip-clock-list.s');
+            const sItems = document.querySelectorAll('.flip-clock-list.s li');
+            
+            if (sList) sList.style.transform = `rotateZ(-${rotateDeg}deg)`;
+            
+            sItems.forEach(item => item.classList.remove('active'));
+            if (sItems[currentSec]) sItems[currentSec].classList.add('active');
+
+            if (currentSec === 0) updateFlipClockMinutes();
+        }
+
+        // 分针更新
+        function updateFlipClockMinutes() {
+            flipTotalMinutes++;
+            const currentMin = flipTotalMinutes % 60;
+            const rotateDeg = flipTotalMinutes * 6;
+            
+            const mList = document.querySelector('.flip-clock-list.m');
+            const mItems = document.querySelectorAll('.flip-clock-list.m li');
+            
+            if (mList) mList.style.transform = `rotateZ(-${rotateDeg}deg)`;
+            
+            mItems.forEach(item => item.classList.remove('active'));
+            if (mItems[currentMin]) mItems[currentMin].classList.add('active');
+
+            if (currentMin === 0) updateFlipClockHours();
+        }
+
+        // 时针更新
+        function updateFlipClockHours() {
+            flipTotalHours++;
+            const currentHour = flipTotalHours % 24;
+            const rotateDeg = flipTotalHours * 15;
+            
+            const hList = document.querySelector('.flip-clock-list.h');
+            const hItems = document.querySelectorAll('.flip-clock-list.h li');
+            
+            if (hList) hList.style.transform = `rotateZ(-${rotateDeg}deg)`;
+            
+            hItems.forEach(item => item.classList.remove('active'));
+            if (hItems[currentHour]) hItems[currentHour].classList.add('active');
+        }
+
+        // 启动数字时钟更新
+        function startDigitalClock() {
+            if (flipClockInterval) {
+                clearInterval(flipClockInterval);
+            }
+            
+            initFlipClockRealTime();
+            flipClockInterval = setInterval(updateFlipClockSeconds, 1000);
+        }
+
+        // 极简时钟初始化
+        function initMinimalClock() {
+            // 无需特殊初始化
+        }
+
+        // 启动极简时钟更新
+        function startMinimalClock() {
+            if (clockUpdateInterval) {
+                clearInterval(clockUpdateInterval);
+            }
+            
+            updateMinimalClock(); // 立即更新一次
+            clockUpdateInterval = setInterval(updateMinimalClock, 1000);
+        }
+
+        // 更新极简时钟
+        function updateMinimalClock() {
+            const date = new Date();
+            const timeElement = document.querySelector('.minimal-time');
+            const dateElement = document.querySelector('.minimal-date');
+            
+            if (timeElement) {
+                timeElement.textContent = date.toLocaleString('zh-CN', { 
+                    hour: '2-digit', 
+                    minute: '2-digit',
+                    hour12: false 
+                });
+            }
+            
+            if (dateElement) {
+                const months = ["1月", "2月", "3月", "4月", "5月", "6月",
+                    "7月", "8月", "9月", "10月", "11月", "12月"];
+                const days = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
+                dateElement.textContent = `${months[date.getMonth()]}${date.getDate()}日 ${days[date.getDay()]}`;
+            }
+        }
+
+        // 切换时钟类型
+        function switchClockType() {
+            // 清理所有定时器
+            if (clockUpdateInterval) {
+                clearInterval(clockUpdateInterval);
+                clockUpdateInterval = null;
+            }
+            
+            if (flipClockInterval) {
+                clearInterval(flipClockInterval);
+                flipClockInterval = null;
+            }
+            
+            clockTypeIndex = (clockTypeIndex + 1) % clockTypes.length;
+            
+            // 保存到本地存储
+            saveClockType(clockTypeIndex);
+            
+            // 更新显示
+            updateClockDisplay();
+            
+            // 显示提示
+            showSwitchNotification(clockTypes[clockTypeIndex].name);
+        }
+
+        // 显示切换通知
+        function showSwitchNotification(name) {
+            let notification = document.getElementById('clock-type-notification');
+            if (!notification) {
+                notification = document.createElement('div');
+                notification.id = 'clock-type-notification';
+                notification.style.cssText = `
+                    position: absolute;
+                    top: 5px; 
+                    left: 50%;
+                    transform: translateX(-50%);
+                    color: #bb6b3c; 
+                    padding: 8px 16px;
+                    border-radius: 15px;
+                    font-size: 14px;
+                    z-index: 1000;
+                    opacity: 0;
+                    transition: opacity 0.3s;
+                    pointer-events: none;
+                    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+                    font-weight: bold;
+                    white-space: nowrap;
+                    box-sizing: border-box;
+                `;
+                // 将提示添加到时钟卡片内部
+                const clockCard = document.getElementById('clock-card');
+                if (clockCard) {
+                    clockCard.appendChild(notification);
+                } else {
+                    document.body.appendChild(notification);
+                }
+            }
+            
+            notification.textContent = `已切换: ${name}`;
+            notification.style.opacity = '1';
+            
+            // 2秒后淡出
+            setTimeout(() => {
+                notification.style.opacity = '0';
+            }, 2000);
+        }
+
+        // 长按检测
+        function setupClockLongPress() {
+            const clockFront = document.querySelector('#clock-card .card-front');
+            if (!clockFront) return;
+            
+            let longPressTimer = null;
+            
+            const startLongPress = function(e) {
+                if (e.target.closest('.button')) return;
+                
+                longPressTimer = setTimeout(() => {
+                    switchClockType();
+                }, 800);
+            };
+
+            const endLongPress = function(e) {
+                if (e.target.closest('.button')) return;
+                if (longPressTimer) {
+                    clearTimeout(longPressTimer);
+                    longPressTimer = null;
+                }
+            };
+
+            // 触摸事件
+            clockFront.addEventListener('touchstart', startLongPress);
+            clockFront.addEventListener('touchend', endLongPress);
+            clockFront.addEventListener('touchcancel', endLongPress);
+
+            // 鼠标事件
+            clockFront.addEventListener('mousedown', startLongPress);
+            clockFront.addEventListener('mouseup', endLongPress);
+            clockFront.addEventListener('mouseleave', endLongPress);
+        }
+
+        // 初始化
+        window.addEventListener('DOMContentLoaded', function() {
+            // 初始化时钟系统
+            initClockSystem();
+            
+            // 设置长按事件
+            setupClockLongPress();
+            
+            console.log('时钟系统初始化完成，当前类型:', clockTypeIndex);
+        });
+
+        // 页面卸载时清理定时器
+        window.addEventListener('beforeunload', function() {
+            if (clockUpdateInterval) {
+                clearInterval(clockUpdateInterval);
+            }
+            if (flipClockInterval) {
+                clearInterval(flipClockInterval);
+            }
+        });
+
+    })();
+
+    // 替换您整个 window.onload 函数为以下代码：
+    window.onload = function initPage() {
+        // 秒表功能
+        const stopWatch = document.querySelector(".stopwatch");
+        const handles = document.querySelectorAll(".clock .handle .pointer");
+        const rightButton = document.querySelector(".button-right > div");
+
+        const resetButton = document.querySelector(".button-left");
+        resetButton.addEventListener("click", () => resetTimer());
+
+        const startstopButton = document.querySelector(".button-right");
+        startstopButton.addEventListener("click", () => startstopTimer());
+        
+        let active = true; // 初始状态设为运行中
+
+        // 初始启动秒表
+        setTimeout(() => {
+            console.log("初始启动秒表");
+            stopWatch.classList.add("running");
+            
+            // 确保所有指针动画都运行
+            handles.forEach((handle) => {
+                handle.style.animationPlayState = "running";
+            });
+        }, 10);
+
+        function startstopTimer() {
+            console.log("切换秒表状态，当前active:", active);
+            
+            if (!active) {
+                active = true;
+                stopWatch.classList.add("running");
+                // 启动所有指针动画
+                handles.forEach((handle) => {
+                    handle.style.animationPlayState = "running";
+                });
+                console.log("秒表开始运行");
+            } else {
+                active = false;
+                stopWatch.classList.remove("running");
+                // 暂停所有指针动画
+                handles.forEach((handle) => {
+                    handle.style.animationPlayState = "paused";
+                });
+                console.log("秒表停止");
+            }
+        }
+
+        function resetTimer() {
+            console.log("重置秒表");
+            active = false; // 重置后设为停止状态
+            stopWatch.classList.remove("running");
+            
+            // 重置秒针和分针动画
+            handles.forEach((handle) => {
+                handle.style.animation = "none";
+                handle.offsetHeight; // 强制重绘
+                handle.style.animation = null;
+                handle.style.animationPlayState = "paused";
+            });
+            
+            // 强制右按钮回到红色弹出状态
+            if (rightButton) {
+                // 移除所有内联样式
+                rightButton.style.removeProperty('--knobColor');
+                rightButton.style.removeProperty('--translateY');
+                rightButton.style.removeProperty('height');
+                rightButton.style.removeProperty('background-image');
+                rightButton.style.removeProperty('box-shadow');
+            }
+        }
+        
+        // 卡片翻转功能
+        const clockCard = document.getElementById('clock-card');
+        const weatherCard = document.getElementById('weather-card');
+
+        let longPressTimer;
+        let isLongPressed = false;
+        let clockTypeIndex = 0;
+
+        // 滚动方向状态变量
+        let scrollDirection = 'down'; // 'down' 或 'up'
+        let scrollStep = 0; // 滚动步长，初始为0，将在第一次滚动时计算
+        
+        // 修复翻转时卡片大小问题 - 确保在移动端正确应用缩放
+        function applyMobileScale() {
+            if (window.innerWidth <= 600) {
+                const cards = [clockCard, weatherCard];
+                cards.forEach(card => {
+                    // 如果卡片已经翻转，确保有旋转和缩放
+                    if (card.classList.contains('flipped')) {
+                        card.style.transform = 'scale(0.8) rotateY(180deg)';
+                    } else {
+                        card.style.transform = 'scale(0.8)';
+                    }
+                });
+            }
+        }
+
+        // 计算滚动步长（一个项目的高度）
+        function calculateScrollStep() {
+            const forecastList = document.getElementById('forecast-list');
+            if (forecastList && forecastList.children.length > 0) {
+                const firstItem = forecastList.children[0];
+                const itemHeight = firstItem.offsetHeight;
+                return itemHeight;
+            }
+            return 40; // 默认值
+        }
+
+        // 执行滚动
+        function performScroll() {
+            const forecastList = document.getElementById('forecast-list');
+            if (!forecastList) return;
+            
+            // 计算滚动步长
+            if (scrollStep === 0) {
+                scrollStep = calculateScrollStep();
+            }
+            
+            const currentScrollTop = forecastList.scrollTop;
+            const maxScrollTop = forecastList.scrollHeight - forecastList.clientHeight;
+            
+            // 确定滚动方向
+            if (scrollDirection === 'down') {
+                // 向下滚动
+                let newScrollTop = currentScrollTop + scrollStep;
+                
+                // 如果已经滚动到底部，切换方向
+                if (newScrollTop >= maxScrollTop) {
+                    newScrollTop = maxScrollTop;
+                    scrollDirection = 'up';
+                }
+                
+                forecastList.scrollTo({
+                    top: newScrollTop,
+                    behavior: 'smooth'
+                });
+            } else {
+                // 向上滚动
+                let newScrollTop = currentScrollTop - scrollStep;
+                
+                // 如果已经滚动到顶部，切换方向
+                if (newScrollTop <= 0) {
+                    newScrollTop = 0;
+                    scrollDirection = 'down';
+                }
+                
+                forecastList.scrollTo({
+                    top: newScrollTop,
+                    behavior: 'smooth'
+                });
+            }
+        }
+
+        // 初始应用缩放
+        applyMobileScale();
+        
+        // 监听窗口大小变化
+        window.addEventListener('resize', applyMobileScale);
+
+        // 防止长按选择
+        document.addEventListener('contextmenu', function(e) {
+            if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA' && 
+                e.target.tagName !== 'BUTTON') {
+                e.preventDefault();
+            }
+        });
+        
+        // 时钟卡片点击翻转
+        clockCard.addEventListener('click', function(e) {
+    // 如果点击的是秒表按钮或数字时钟的"C"，不翻转
+    if (e.target.closest('.button') || e.target.closest('.flip-clock-title')) {
+        return;
+    }
+    
+    console.log("点击时钟卡片 - 翻转");
+    this.classList.toggle('flipped');
+    // 应用正确的缩放
+    applyMobileScale();
+    
+    // 添加点击反馈
+    this.style.backgroundColor = 'rgba(187, 107, 60, 0.05)';
+    setTimeout(() => {
+        this.style.backgroundColor = '';
+    }, 200);
+});
+
+
+        // 天气卡片点击翻转
+        weatherCard.addEventListener('click', function(e) {
+            // 检查是否在卡片背面
+            if (this.classList.contains('flipped')) {
+                // 获取点击位置相对于卡片的X坐标
+                const rect = this.getBoundingClientRect();
+                const clickX = e.clientX - rect.left;
+                const cardWidth = rect.width;
+                
+                // 计算点击位置百分比
+                const clickPercent = (clickX / cardWidth) * 100;
+                
+                // 如果点击在右侧33.33%区域，执行滚动
+                if (clickPercent > 66.67) {
+                    console.log("点击右侧区域 - 执行滚动");
+                    performScroll();
+                    e.stopPropagation(); // 阻止事件冒泡
+                    return; // 不翻转
+                } else {
+                    // 点击左侧或中间区域，翻转卡片
+                    console.log("点击左侧/中间区域 - 翻转卡片");
+                    this.classList.toggle('flipped');
+                    // 应用正确的缩放
+                    applyMobileScale();
+                    e.stopPropagation(); // 阻止事件冒泡
+                }
+            } else {
+                // 正面状态，全区域翻转
+                console.log("点击正面 - 翻转卡片");
+                this.classList.toggle('flipped');
+                // 应用正确的缩放
+                applyMobileScale();
+            }
+            
+            // 添加点击反馈
+            this.style.backgroundColor = 'rgba(187, 107, 60, 0.05)';
+            setTimeout(() => {
+                this.style.backgroundColor = '';
+            }, 200);
+        });
+
+        // 触摸事件处理 - 确保在移动端也能正确工作
+        let touchStartX = 0;
+        let touchStartY = 0;
+        let touchStartTime = 0;
+        let isTouchMove = false;
+        
+        function setupTouchEvents(card, isWeatherCard = false) {
+    let touchStartX = 0;
+    let touchStartY = 0;
+    let touchStartTime = 0;
+    let isTouchMove = false;
+    
+    card.addEventListener('touchstart', function(e) {
+        touchStartX = e.touches[0].clientX;
+        touchStartY = e.touches[0].clientY;
+        touchStartTime = Date.now();
+        isTouchMove = false;
+    }, { passive: true });
+    
+    card.addEventListener('touchmove', function(e) {
+        const touchX = e.touches[0].clientX;
+        const touchY = e.touches[0].clientY;
+        
+        // 判断是否是移动操作
+        if (Math.abs(touchX - touchStartX) > 5 || Math.abs(touchY - touchStartY) > 5) {
+            isTouchMove = true;
+        }
+    }, { passive: true });
+    
+    card.addEventListener('touchend', function(e) {
+        const touchEndX = e.changedTouches[0].clientX;
+        const touchEndY = e.changedTouches[0].clientY;
+        const touchDuration = Date.now() - touchStartTime;
+        
+        // 如果是滑动操作，不触发点击事件
+        if (isTouchMove) {
+            return;
+        }
+        
+        // 检查是否点击了特定元素
+        const target = e.target;
+        if (target.closest('.button') || target.closest('#location-display') || 
+            target.closest('#location-input') || target.closest('.flip-clock-title')) {
+            // 让这些元素的点击事件正常处理，不触发卡片翻转
+            return;
+        }
+        
+        // 短点击（小于300ms）才触发点击逻辑
+        if (touchDuration < 300) {
+            // 计算点击位置
+            const rect = this.getBoundingClientRect();
+            const touchX = touchEndX - rect.left;
+            const cardWidth = rect.width;
+            const touchPercent = (touchX / cardWidth) * 100;
+            
+            // 如果是天气卡片且是翻转状态
+            if (isWeatherCard && this.classList.contains('flipped')) {
+                // 如果点击在右侧33.33%区域，执行滚动
+                if (touchPercent > 66.67) {
+                    console.log("触摸右侧区域 - 执行滚动");
+                    performScroll();
+                    e.preventDefault();
+                    return;
+                } else {
+                    // 点击左侧或中间区域，翻转
+                    console.log("触摸左侧/中间区域 - 翻转卡片");
+                    this.classList.toggle('flipped');
+                    applyMobileScale();
+                    e.preventDefault();
+                }
+            } else {
+                // 正面状态，全区域翻转
+                console.log("触摸卡片 - 翻转");
+                this.classList.toggle('flipped');
+                applyMobileScale();
+                e.preventDefault();
+            }
+        }
+    }, { passive: false });
+}
+        
+        // 为两个卡片设置触摸事件
+        setupTouchEvents(clockCard);
+        setupTouchEvents(weatherCard, true);
+
+        // 天气功能
+        const savedCity = localStorage.getItem('weatherCity') || "北京";
+        const weatherIconMap = {
+            "晴": "☀️", "多云": "⛅", "阴": "🌥️", "小雨": "🌧️", "中雨": "🌧️", 
+            "大雨": "🌧️", "暴雨": "⛈️", "雷阵雨": "⛈️", "阵雨": "🌦️", "雪": "❄️",
+            "小雪": "❄️", "中雪": "❄️", "大雪": "❄️", "暴雪": "❄️", "雾": "🌫️", 
+            "霾": "🌫️", "沙尘": "💨", "扬沙": "💨", "浮尘": "💨", "冰雹": "🌨️"
+        };
+
+        const locationInput = document.getElementById('location-input');
+        const locationDisplay = document.getElementById('location-display');
+        const weatherLoading = document.getElementById('weather-loading');
+        const weatherError = document.getElementById('weather-error');
+        const weatherIcon = document.getElementById('weather-icon');
+        const weatherStatus = document.getElementById('weather-status');
+        const temperature = document.getElementById('temperature');
+        const humidity = document.getElementById('humidity');
+        const wind = document.getElementById('wind');
+        const pressure = document.getElementById('pressure');
+        const weatherInfo = document.getElementById('weather-info');
+        const forecastList = document.getElementById('forecast-list');
+
+        function checkTextScroll() {
+            const containerWidth = locationDisplay.offsetWidth;
+            const textWidth = locationDisplay.scrollWidth;
+            locationDisplay.classList.toggle('scroll', textWidth > containerWidth);
+        }
+
+        async function getWeatherData(cityName) {
+            weatherLoading.style.display = 'block';
+            weatherError.style.display = 'none';
+            weatherIcon.style.display = 'none';
+            weatherStatus.style.display = 'none';
+            temperature.style.display = 'none';
+            weatherInfo.style.display = 'none';
+
+            try {
+                const weatherUrl = `https://cn.apihz.cn/api/tianqi/tqyb.php?id=10010385&key=0992dc9176c2cb2aaf916ce05ff8f6c5&sheng=&place=${encodeURIComponent(cityName)}&day=7&hourtype=1`;
+                const response = await fetch(weatherUrl);
+                
+                if (!response.ok) throw new Error(`请求失败: ${response.status}`);
+                const data = await response.json();
+                if (data.code !== 200) throw new Error(data.msg || "天气数据获取失败");
+                
+                locationDisplay.textContent = data.name || cityName;
+                localStorage.setItem('weatherCity', cityName);
+                setTimeout(checkTextScroll, 100);
+                
+                const weatherText = data.weather1 || '未知';
+                const icon = weatherIconMap[weatherText] || 
+                            (weatherText.includes('雨') ? '🌧️' : 
+                             weatherText.includes('雪') ? '❄️' : 
+                             weatherText.includes('雾') || weatherText.includes('霾') ? '🌫️' : '☀️');
+                
+                weatherIcon.textContent = icon;
+                weatherStatus.textContent = weatherText;
+                temperature.textContent = data.nowinfo?.temperature 
+                    ? `${Math.round(data.nowinfo.temperature)}℃` 
+                    : `${data.wd1}℃/${data.wd2}℃`;
+                
+                humidity.textContent = data.nowinfo?.humidity ? `${data.nowinfo.humidity}%` : 'N/A';
+                wind.textContent = data.nowinfo 
+                    ? `${data.nowinfo.windDirection} ${data.nowinfo.windScale}`.trim() 
+                    : `${data.winddirection1} ${data.windleve1}`.trim() || 'N/A';
+                pressure.textContent = data.nowinfo?.pressure ? `${data.nowinfo.pressure} hPa` : 'N/A';
+                
+                weatherLoading.style.display = 'none';
+                weatherIcon.style.display = 'block';
+                weatherStatus.style.display = 'block';
+                temperature.style.display = 'block';
+                weatherInfo.style.display = 'flex';
+                updateWeekForecast(data);
+                
+            } catch (error) {
+                console.error("天气数据获取失败:", error);
+                weatherLoading.style.display = 'none';
+                weatherError.style.display = 'block';
+                setTimeout(() => useMockWeatherData(cityName), 3000);
+            }
+        }
+
+        function updateWeekForecast(data) {
+            if (!forecastList) return;
+            
+            forecastList.innerHTML = '';
+            const dayNames = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
+            const today = new Date();
+            const todayMonth = today.getMonth() + 1;
+            const todayDate = today.getDate();
+            const todayDayName = dayNames[today.getDay()];
+            
+            const todayIcon = weatherIconMap[data.weather1] || 
+                            (data.weather1.includes('雨') ? '🌧️' : 
+                             data.weather1.includes('雪') ? '❄️' : 
+                             data.weather1.includes('雾') || data.weather1.includes('霾') ? '🌫️' : '☀️');
+            
+            const todayItem = document.createElement('div');
+            todayItem.className = 'forecast-item';
+            todayItem.innerHTML = `
+                <div class="forecast-date">${todayMonth}/${todayDate} ${todayDayName}</div>
+                <div class="forecast-weather">
+                    <div class="forecast-icon">${todayIcon}</div>
+                    <div class="forecast-temp">${data.wd2}°/${data.wd1}°</div>
+                    <div class="forecast-desc">${data.weather1}</div>
+                </div>
+            `;
+            forecastList.appendChild(todayItem);
+            
+            for (let i = 2; i <= 7; i++) {
+                const dayKey = `weatherday${i}`;
+                if (data[dayKey]) {
+                    const day = data[dayKey];
+                    const date = new Date(day.date.replace(/\//g, '-'));
+                    const month = date.getMonth() + 1;
+                    const dayNum = date.getDate();
+                    const dayName = dayNames[date.getDay()];
+                    
+                    const weatherIcon = weatherIconMap[day.weather1] || 
+                                      (day.weather1.includes('雨') ? '🌧️' : 
+                                       day.weather1.includes('雪') ? '❄️' : 
+                                       day.weather1.includes('雾') || day.weather1.includes('霾') ? '🌫️' : '☀️');
+                    
+                    const forecastItem = document.createElement('div');
+                    forecastItem.className = 'forecast-item';
+                    forecastItem.innerHTML = `
+                        <div class="forecast-date">${month}/${dayNum} ${dayName}</div>
+                        <div class="forecast-weather">
+                            <div class="forecast-icon">${weatherIcon}</div>
+                            <div class="forecast-temp">${day.wd2}°/${day.wd1}°</div>
+                            <div class="forecast-desc">${day.weather1}</div>
+                        </div>
+                    `;
+                    forecastList.appendChild(forecastItem);
+                }
+            }
+            
+            // 确保滚动容器正确工作
+            if (forecastList.scrollHeight > forecastList.clientHeight) {
+                forecastList.style.overflowY = 'auto';
+            }
+            
+            // 重置滚动步长，因为项目高度可能改变
+            scrollStep = 0;
+        }
+
+        function useMockWeatherData(cityName) {
+            const mockData = {
+                "北京": { icon: '🌫️', status: '霾', temp: '9℃', humidity: '12%', wind: '西北风6-7级', pressure: 'N/A' },
+                "上海": { icon: '⛅', status: '多云', temp: '15℃', humidity: '65%', wind: '东风3级', pressure: '1012 hPa' }
+            };
+            const weatherData = mockData[cityName] || mockData["北京"];
+
+            locationDisplay.textContent = cityName;
+            localStorage.setItem('weatherCity', cityName);
+            setTimeout(checkTextScroll, 100);
+            
+            weatherIcon.textContent = weatherData.icon;
+            weatherStatus.textContent = weatherData.status;
+            temperature.textContent = weatherData.temp;
+            humidity.textContent = weatherData.humidity;
+            wind.textContent = weatherData.wind;
+            pressure.textContent = weatherData.pressure;
+            
+            weatherLoading.style.display = 'none';
+            weatherError.style.display = 'none';
+            weatherIcon.style.display = 'block';
+            weatherStatus.style.display = 'block';
+            temperature.style.display = 'block';
+            weatherInfo.style.display = 'flex';
+            
+            updateWeekForecast({
+                weather1: weatherData.status,
+                wd1: weatherData.temp.split('℃')[0],
+                wd2: (parseInt(weatherData.temp.split('℃')[0]) - 5).toString(),
+                weatherday2: { date: "2025/12/01", weather1: "多云", wd1: "4", wd2: "-6" },
+                weatherday3: { date: "2025/12/02", weather1: "晴", wd1: "0", wd2: "-8" },
+                weatherday4: { date: "2025/12/03", weather1: "晴", wd1: "2", wd2: "-5" },
+                weatherday5: { date: "2025/12/04", weather1: "晴", wd1: "5", wd2: "-4" },
+                weatherday6: { date: "2025/12/05", weather1: "多云", wd1: "5", wd2: "-3" },
+                weatherday7: { date: "2025/12/06", weather1: "晴", wd1: "8", wd2: "-2" }
+            });
+        }
+
+        locationDisplay.addEventListener('click', function(e) {
+            e.stopPropagation();
+            locationInput.classList.add('active');
+            locationDisplay.style.display = 'none';
+            locationInput.focus();
+            locationInput.value = '';
+            locationDisplay.classList.remove('scroll');
+        });
+
+        locationInput.addEventListener('blur', function() {
+            const location = this.value.trim() || savedCity;
+            getWeatherData(location);
+            locationInput.classList.remove('active');
+            locationDisplay.style.display = 'block';
+            this.value = '';
+        });
+
+        locationInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                const location = this.value.trim() || savedCity;
+                getWeatherData(location);
+                locationInput.classList.remove('active');
+                locationDisplay.style.display = 'block';
+                this.value = '';
+            }
+        });
+
+        document.addEventListener('click', function(e) {
+            if (!locationInput.contains(e.target) && e.target !== locationDisplay) {
+                if (locationInput.classList.contains('active')) {
+                    const location = locationInput.value.trim() || savedCity;
+                    getWeatherData(location);
+                    locationInput.classList.remove('active');
+                    locationDisplay.style.display = 'block';
+                    locationInput.value = '';
+                }
+            }
+        });
+
+        getWeatherData(savedCity);
+        setInterval(() => {
+            const currentCity = localStorage.getItem('weatherCity') || savedCity;
+            getWeatherData(currentCity);
+        }, 1800000);
+    }
+</script>
+</body>
+</html>
