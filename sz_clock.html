@@ -1,0 +1,821 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D骰子时钟</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Major+Mono+Display&display=swap');
+
+      *,
+*::before,
+*::after {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    transform-style: preserve-3d;
+}
+
+body {
+    min-height: 100vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: transparent;
+    perspective: 500px;
+    font-family: 'Major Mono Display', monospace;
+    touch-action: none;
+    padding: 2px;
+}
+
+.container {
+    width: 100vw;
+    height: 100vh;
+    /*background-image: url("https://picsum.photos/1080/1920");*/
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding-top: 5vh;
+    position: relative;
+    /* 新增：允许3D元素超出容器显示（关键修复） 
+    overflow: visible;*/
+}
+
+/*.container::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    backdrop-filter: blur(8px);
+    background: rgba(0, 0, 0, 0.3);
+    z-index: 1;
+    -webkit-backdrop-filter: blur(8px);
+    /* 新增：遮罩也允许超出，避免遮挡旋转的骰子 */
+    overflow: visible;
+}*/ 
+    
+.clock-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-top: 5vh;
+    z-index: 2;
+}
+
+.clock-container {
+    display: grid;
+    grid-template-columns: repeat(8, max-content);
+    grid-template-rows: repeat(2, max-content);
+    gap: 4vmin;
+}
+
+/* geometry */
+/* cube */
+[cube] {
+    --s: var(--size, 1rem);
+    width: var(--s);
+    height: var(--s);
+    display: grid;
+    grid-template: "center";
+    place-items: center;
+    outline: 2px solid transparent;
+}
+
+/* cube planes */
+[cube-plane] {
+    grid-area: center;
+    width: 100%;
+    height: 100%;
+    transform: 
+    translateX(var(--pl-tx, 0px)) translateY(var(--pl-ty, 0px)) translatez(var(--pl-tz, 0px)) 
+    rotateX(var(--pl-rx, 0deg)) rotateY(var(--pl-ry, 0deg)) rotateZ(var(--pl-rz, 0deg));
+    --half-neg: calc(var(--s) / -2 + 0.1px);
+    --half_pos: calc(var(--s) / 2 - 0.1px);
+}
+[cube-plane="front"]  { --pl-tz: var(--half_pos); }
+[cube-plane="back"]   { --pl-tz: var(--half-neg); }
+[cube-plane="left"]   { --pl-tx: var(--half_pos); --pl-ry: 90deg; }
+[cube-plane="right"]  { --pl-tx: var(--half-neg); --pl-ry: 90deg; }
+[cube-plane="bottom"] { --pl-ty: var(--half_pos); --pl-rx: 90deg; }
+[cube-plane="top"]    { --pl-ty: var(--half-neg); --pl-rx: 90deg; }
+
+/* styling */
+.die   { --size: 10vmin }
+.colon { --size: 3vmin }
+.colon.c1t, .colon.c2t { align-self: end  ; }
+.colon.c1b, .colon.c2b { align-self: start; }
+
+/* planes */
+.colon [cube-plane] {
+    background: rgba(50,50,50,0.7);
+}
+.die [cube-plane] {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(3, 1fr);
+    padding: 20%;
+    gap: 10%; 
+    background: rgba(25,25,25,0.8);
+    /* 新增：1px灰色边框 + 4px圆角 */
+    border: 1px solid #888;
+    border-radius: 4px;
+}
+
+/* numbers */
+.die i { 
+    background: var(--dotColor, grey); 
+    border-radius: 50%; 
+    grid-row: var(--gr); 
+    grid-column: var(--gc);
+}
+.die i.tl { --gr: 1; --gc: 1; }
+.die i.tc { --gr: 1; --gc: 2; }
+.die i.tr { --gr: 1; --gc: 3; }
+.die i.cl { --gr: 2; --gc: 1; }
+.die i.cc { --gr: 2; --gc: 2; }
+.die i.cr { --gr: 2; --gc: 3; }
+.die i.bl { --gr: 3; --gc: 1; }
+.die i.bc { --gr: 3; --gc: 2; }
+.die i.br { --gr: 3; --gc: 3; }
+
+/* die rotation */
+.die {
+    transform: rotateX(var(--rotateX,0deg)) rotateY(var(--rotateY, 0deg)) rotateZ(var(--rotateZ, 0deg));
+    transition: transform 0.25s ease
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.6));
+}
+
+.die[data-nr="2"] { --rotateX: -90deg } .die[data-nr="3"] { --rotateY: -90deg }
+.die[data-nr="4"] { --rotateY:  90deg } .die[data-nr="5"] { --rotateX:  90deg }
+.die[data-nr="6"] { --rotateX: 180deg } .die[data-nr="0"] { --rotateY: 180deg }
+.die[data-nr="0"] i { opacity: 0 }
+
+/* highlight front face*/
+.die[data-nr="1"] .nr1, .die[data-nr="2"] .nr2, .die[data-nr="3"] .nr3, .die[data-nr="4"] .nr4,
+.die[data-nr="5"] .nr5, .die[data-nr="6"] .nr6, .die[data-nr="0"] .nr6, .colon [cube-plane="front"]{ 
+    --dotColor: white;
+    background-image: linear-gradient(rgba(255,255,255,0.1),rgba(255,255,255,0.1));
+}
+
+/* zoom and rotation*/
+.clock-container{
+    transform: 
+        translateZ(calc(var(--clock-tz,0) * 1px)) 
+        rotateX(calc(var(--clock-rx,0) * 1deg))
+        rotateY(calc(var(--clock-ry,0) * 1deg));  
+}
+
+.clock-container.smooth-leave{
+    transition: transform 0.25s linear;
+}
+
+/* 移动设备优化 */
+@media (max-width: 768px) {
+    .clock-container {
+        gap: 8vmin;
+    }
+    .die {
+        --size: 23vmin;
+    }
+    .colon {
+        --size: 5.5vmin;
+    }
+}
+
+/* 时间显示样式 - 在骰子下方 */
+#current-time {
+    margin-top: 30px;
+    font-size: 14px;
+    color: white;
+    font-weight: bold;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+    pointer-events: none;
+    padding: 6px 10px;
+    border-radius: 4px;
+    font-family: 'Major Mono Display', monospace;
+    white-space: nowrap;
+    text-align: center;
+}
+
+    </style>
+</head>
+    
+<body>
+<div class="container">
+    <div class="clock-wrapper">
+        <div class="clock-container">
+            <!-- 骰子结构保持不变，为节省篇幅省略 -->
+            <div cube class="die h1t" data-nr="0">
+                <div cube-plane="front" class="nr1">
+                    <i class="cc"></i>
+                </div>
+                <div cube-plane="back" class="nr6">
+                    <i class="tl"></i>
+                    <i class="tr"></i>
+                    <i class="cl"></i>
+                    <i class="cr"></i>
+                    <i class="bl"></i>
+                    <i class="br"></i>
+                </div>
+                <div cube-plane="left" class="nr3">
+                    <i class="tl"></i>
+                    <i class="cc"></i>
+                    <i class="br"></i>
+                </div>
+                <div cube-plane="right" class="nr4">
+                    <i class="tl"></i>
+                    <i class="tr"></i>
+                    <i class="bl"></i>
+                    <i class="br"></i>
+                </div>
+                <div cube-plane="bottom" class="nr5">
+                    <i class="tl"></i>
+                    <i class="tr"></i>
+                    <i class="cc"></i>
+                    <i class="bl"></i>
+                    <i class="br"></i>
+                </div>
+                <div cube-plane="top" class="nr2">
+                    <i class="tl"></i>
+                    <i class="br"></i>
+                </div>
+            </div>
+            <div cube class="die h2t" data-nr="0">
+                <div cube-plane="front" class="nr1">
+                    <i class="cc"></i>
+                </div>
+                <div cube-plane="back" class="nr6">
+                    <i class="tl"></i>
+                    <i class="tr"></i>
+                    <i class="cl"></i>
+                    <i class="cr"></i>
+                    <i class="bl"></i>
+                    <i class="br"></i>
+                </div>
+                <div cube-plane="left" class="nr3">
+                    <i class="tl"></i>
+                    <i class="cc"></i>
+                    <i class="br"></i>
+                </div>
+                <div cube-plane="right" class="nr4">
+                    <i class="tl"></i>
+                    <i class="tr"></i>
+                    <i class="bl"></i>
+                    <i class="br"></i>
+                </div>
+                <div cube-plane="bottom" class="nr5">
+                    <i class="tl"></i>
+                    <i class="tr"></i>
+                    <i class="cc"></i>
+                    <i class="bl"></i>
+                    <i class="br"></i>
+                </div>
+                <div cube-plane="top" class="nr2">
+                    <i class="tl"></i>
+                    <i class="br"></i>
+                </div>
+            </div>
+            <div cube class="colon c1t">
+                <div cube-plane="front"></div>
+                <div cube-plane="back"></div>
+                <div cube-plane="left"></div>
+                <div cube-plane="right"></div>
+                <div cube-plane="bottom"></div>
+                <div cube-plane="top"></div>
+            </div>
+            <div cube class="die m1t" data-nr="0">
+                <div cube-plane="front" class="nr1">
+                    <i class="cc"></i>
+                </div>
+                <div cube-plane="back" class="nr6">
+                    <i class="tl"></i>
+                    <i class="tr"></i>
+                    <i class="cl"></i>
+                    <i class="cr"></i>
+                    <i class="bl"></i>
+                    <i class="br"></i>
+                </div>
+                <div cube-plane="left" class="nr3">
+                    <i class="tl"></i>
+                    <i class="cc"></i>
+                    <i class="br"></i>
+                </div>
+                <div cube-plane="right" class="nr4">
+                    <i class="tl"></i>
+                    <i class="tr"></i>
+                    <i class="bl"></i>
+                    <i class="br"></i>
+                </div>
+                <div cube-plane="bottom" class="nr5">
+                    <i class="tl"></i>
+                    <i class="tr"></i>
+                    <i class="cc"></i>
+                    <i class="bl"></i>
+                    <i class="br"></i>
+                </div>
+                <div cube-plane="top" class="nr2">
+                    <i class="tl"></i>
+                    <i class="br"></i>
+                </div>
+            </div>
+            <div cube class="die m2t" data-nr="0">
+                <div cube-plane="front" class="nr1">
+                    <i class="cc"></i>
+                </div>
+                <div cube-plane="back" class="nr6">
+                    <i class="tl"></i>
+                    <i class="tr"></i>
+                    <i class="cl"></i>
+                    <i class="cr"></i>
+                    <i class="bl"></i>
+                    <i class="br"></i>
+                </div>
+                <div cube-plane="left" class="nr3">
+                    <i class="tl"></i>
+                    <i class="cc"></i>
+                    <i class="br"></i>
+                </div>
+                <div cube-plane="right" class="nr4">
+                    <i class="tl"></i>
+                    <i class="tr"></i>
+                    <i class="bl"></i>
+                    <i class="br"></i>
+                </div>
+                <div cube-plane="bottom" class="nr5">
+                    <i class="tl"></i>
+                    <i class="tr"></i>
+                    <i class="cc"></i>
+                    <i class="bl"></i>
+                    <i class="br"></i>
+                </div>
+                <div cube-plane="top" class="nr2">
+                    <i class="tl"></i>
+                    <i class="br"></i>
+                </div>
+            </div>
+            <div cube class="colon c2t">
+                <div cube-plane="front"></div>
+                <div cube-plane="back"></div>
+                <div cube-plane="left"></div>
+                <div cube-plane="right"></div>
+                <div cube-plane="bottom"></div>
+                <div cube-plane="top"></div>
+            </div>
+            <div cube class="die s1t" data-nr="0">
+                <div cube-plane="front" class="nr1">
+                    <i class="cc"></i>
+                </div>
+                <div cube-plane="back" class="nr6">
+                    <i class="tl"></i>
+                    <i class="tr"></i>
+                    <i class="cl"></i>
+                    <i class="cr"></i>
+                    <i class="bl"></i>
+                    <i class="br"></i>
+                </div>
+                <div cube-plane="left" class="nr3">
+                    <i class="tl"></i>
+                    <i class="cc"></i>
+                    <i class="br"></i>
+                </div>
+                <div cube-plane="right" class="nr4">
+                    <i class="tl"></i>
+                    <i class="tr"></i>
+                    <i class="bl"></i>
+                    <i class="br"></i>
+                </div>
+                <div cube-plane="bottom" class="nr5">
+                    <i class="tl"></i>
+                    <i class="tr"></i>
+                    <i class="cc"></i>
+                    <i class="bl"></i>
+                    <i class="br"></i>
+                </div>
+                <div cube-plane="top" class="nr2">
+                    <i class="tl"></i>
+                    <i class="br"></i>
+                </div>
+            </div>
+            <div cube class="die s2t" data-nr="0">
+                <div cube-plane="front" class="nr1">
+                    <i class="cc"></i>
+                </div>
+                <div cube-plane="back" class="nr6">
+                    <i class="tl"></i>
+                    <i class="tr"></i>
+                    <i class="cl"></i>
+                    <i class="cr"></i>
+                    <i class="bl"></i>
+                    <i class="br"></i>
+                </div>
+                <div cube-plane="left" class="nr3">
+                    <i class="tl"></i>
+                    <i class="cc"></i>
+                    <i class="br"></i>
+                </div>
+                <div cube-plane="right" class="nr4">
+                    <i class="tl"></i>
+                    <i class="tr"></i>
+                    <i class="bl"></i>
+                    <i class="br"></i>
+                </div>
+                <div cube-plane="bottom" class="nr5">
+                    <i class="tl"></i>
+                    <i class="tr"></i>
+                    <i class="cc"></i>
+                    <i class="bl"></i>
+                    <i class="br"></i>
+                </div>
+                <div cube-plane="top" class="nr2">
+                    <i class="tl"></i>
+                    <i class="br"></i>
+                </div>
+            </div>
+            <div cube class="die h1b" data-nr="0">
+                <div cube-plane="front" class="nr1">
+                    <i class="cc"></i>
+                </div>
+                <div cube-plane="back" class="nr6">
+                    <i class="tl"></i>
+                    <i class="tr"></i>
+                    <i class="cl"></i>
+                    <i class="cr"></i>
+                    <i class="bl"></i>
+                    <i class="br"></i>
+                </div>
+                <div cube-plane="left" class="nr3">
+                    <i class="tl"></i>
+                    <i class="cc"></i>
+                    <i class="br"></i>
+                </div>
+                <div cube-plane="right" class="nr4">
+                    <i class="tl"></i>
+                    <i class="tr"></i>
+                    <i class="bl"></i>
+                    <i class="br"></i>
+                </div>
+                <div cube-plane="bottom" class="nr5">
+                    <i class="tl"></i>
+                    <i class="tr"></i>
+                    <i class="cc"></i>
+                    <i class="bl"></i>
+                    <i class="br"></i>
+                </div>
+                <div cube-plane="top" class="nr2">
+                    <i class="tl"></i>
+                    <i class="br"></i>
+                </div>
+            </div>
+            <div cube class="die h2b" data-nr="0">
+                <div cube-plane="front" class="nr1">
+                    <i class="cc"></i>
+                </div>
+                <div cube-plane="back" class="nr6">
+                    <i class="tl"></i>
+                    <i class="tr"></i>
+                    <i class="cl"></i>
+                    <i class="cr"></i>
+                    <i class="bl"></i>
+                    <i class="br"></i>
+                </div>
+                <div cube-plane="left" class="nr3">
+                    <i class="tl"></i>
+                    <i class="cc"></i>
+                    <i class="br"></i>
+                </div>
+                <div cube-plane="right" class="nr4">
+                    <i class="tl"></i>
+                    <i class="tr"></i>
+                    <i class="bl"></i>
+                    <i class="br"></i>
+                </div>
+                <div cube-plane="bottom" class="nr5">
+                    <i class="tl"></i>
+                    <i class="tr"></i>
+                    <i class="cc"></i>
+                    <i class="bl"></i>
+                    <i class="br"></i>
+                </div>
+                <div cube-plane="top" class="nr2">
+                    <i class="tl"></i>
+                    <i class="br"></i>
+                </div>
+            </div>
+            <div cube class="colon c1b">
+                <div cube-plane="front"></div>
+                <div cube-plane="back"></div>
+                <div cube-plane="left"></div>
+                <div cube-plane="right"></div>
+                <div cube-plane="bottom"></div>
+                <div cube-plane="top"></div>
+            </div>
+            <div cube class="die m1b" data-nr="0">
+                <div cube-plane="front" class="nr1">
+                    <i class="cc"></i>
+                </div>
+                <div cube-plane="back" class="nr6">
+                    <i class="tl"></i>
+                    <i class="tr"></i>
+                    <i class="cl"></i>
+                    <i class="cr"></i>
+                    <i class="bl"></i>
+                    <i class="br"></i>
+                </div>
+                <div cube-plane="left" class="nr3">
+                    <i class="tl"></i>
+                    <i class="cc"></i>
+                    <i class="br"></i>
+                </div>
+                <div cube-plane="right" class="nr4">
+                    <i class="tl"></i>
+                    <i class="tr"></i>
+                    <i class="bl"></i>
+                    <i class="br"></i>
+                </div>
+                <div cube-plane="bottom" class="nr5">
+                    <i class="tl"></i>
+                    <i class="tr"></i>
+                    <i class="cc"></i>
+                    <i class="bl"></i>
+                    <i class="br"></i>
+                </div>
+                <div cube-plane="top" class="nr2">
+                    <i class="tl"></i>
+                    <i class="br"></i>
+                </div>
+            </div>
+            <div cube class="die m2b" data-nr="0">
+                <div cube-plane="front" class="nr1">
+                    <i class="cc"></i>
+                </div>
+                <div cube-plane="back" class="nr6">
+                    <i class="tl"></i>
+                    <i class="tr"></i>
+                    <i class="cl"></i>
+                    <i class="cr"></i>
+                    <i class="bl"></i>
+                    <i class="br"></i>
+                </div>
+                <div cube-plane="left" class="nr3">
+                    <i class="tl"></i>
+                    <i class="cc"></i>
+                    <i class="br"></i>
+                </div>
+                <div cube-plane="right" class="nr4">
+                    <i class="tl"></i>
+                    <i class="tr"></i>
+                    <i class="bl"></i>
+                    <i class="br"></i>
+                </div>
+                <div cube-plane="bottom" class="nr5">
+                    <i class="tl"></i>
+                    <i class="tr"></i>
+                    <i class="cc"></i>
+                    <i class="bl"></i>
+                    <i class="br"></i>
+                </div>
+                <div cube-plane="top" class="nr2">
+                    <i class="tl"></i>
+                    <i class="br"></i>
+                </div>
+            </div>
+            <div cube class="colon c2b">
+                <div cube-plane="front"></div>
+                <div cube-plane="back"></div>
+                <div cube-plane="left"></div>
+                <div cube-plane="right"></div>
+                <div cube-plane="bottom"></div>
+                <div cube-plane="top"></div>
+            </div>
+            <div cube class="die s1b" data-nr="0">
+                <div cube-plane="front" class="nr1">
+                    <i class="cc"></i>
+                </div>
+                <div cube-plane="back" class="nr6">
+                    <i class="tl"></i>
+                    <i class="tr"></i>
+                    <i class="cl"></i>
+                    <i class="cr"></i>
+                    <i class="bl"></i>
+                    <i class="br"></i>
+                </div>
+                <div cube-plane="left" class="nr3">
+                    <i class="tl"></i>
+                    <i class="cc"></i>
+                    <i class="br"></i>
+                </div>
+                <div cube-plane="right" class="nr4">
+                    <i class="tl"></i>
+                    <i class="tr"></i>
+                    <i class="bl"></i>
+                    <i class="br"></i>
+                </div>
+                <div cube-plane="bottom" class="nr5">
+                    <i class="tl"></i>
+                    <i class="tr"></i>
+                    <i class="cc"></i>
+                    <i class="bl"></i>
+                    <i class="br"></i>
+                </div>
+                <div cube-plane="top" class="nr2">
+                    <i class="tl"></i>
+                    <i class="br"></i>
+                </div>
+            </div>
+            <div cube class="die s2b" data-nr="0">
+                <div cube-plane="front" class="nr1">
+                    <i class="cc"></i>
+                </div>
+                <div cube-plane="back" class="nr6">
+                    <i class="tl"></i>
+                    <i class="tr"></i>
+                    <i class="cl"></i>
+                    <i class="cr"></i>
+                    <i class="bl"></i>
+                    <i class="br"></i>
+                </div>
+                <div cube-plane="left" class="nr3">
+                    <i class="tl"></i>
+                    <i class="cc"></i>
+                    <i class="br"></i>
+                </div>
+                <div cube-plane="right" class="nr4">
+                    <i class="tl"></i>
+                    <i class="tr"></i>
+                    <i class="bl"></i>
+                    <i class="br"></i>
+                </div>
+                <div cube-plane="bottom" class="nr5">
+                    <i class="tl"></i>
+                    <i class="tr"></i>
+                    <i class="cc"></i>
+                    <i class="bl"></i>
+                    <i class="br"></i>
+                </div>
+                <div cube-plane="top" class="nr2">
+                    <i class="tl"></i>
+                    <i class="br"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- 时间日期显示 -->
+        <div id="current-time"></div>
+    </div>
+</div>
+    <script>
+        const clockContainer = document.querySelector('.clock-container');
+        const timeEl = document.getElementById('current-time');
+
+        animateClock();
+        setInterval(animateClock, 1000);
+
+        function animateClock() {
+            const date = new Date();
+            const hours = date.getHours();
+            const minutes = date.getMinutes();
+            const seconds = date.getSeconds();
+
+            setDice('h', hours);
+            setDice('m', minutes);
+            setDice('s', seconds);
+            updateTime();
+        }
+
+        function updateTime() {
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = now.getMonth() + 1;
+            const day = now.getDate();
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const seconds = String(now.getSeconds()).padStart(2, '0');
+            const week = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
+            const weekday = week[now.getDay()];
+
+            if (timeEl) {
+                timeEl.textContent =
+                    year + '年' + month + '月' + day + '日 ' +
+                    weekday + ' ' + hours + ':' + minutes + ':' + seconds;
+            }
+        }
+
+        // 鼠标缩放
+        document.body.addEventListener("wheel", (e) => {
+            const dir = Math.sign(e.wheelDeltaY);
+            const currentValue = clockContainer.style.getPropertyValue('--clock-tz');
+            const newValue = Number(currentValue) + (100 * dir);
+            clockContainer.style.setProperty('--clock-tz', cap(newValue, 0, 1000));
+        });
+
+        // 鼠标旋转
+        document.body.addEventListener("mousemove", (e) => {
+            const degY = map(e.clientX, 0, window.innerWidth, -45, 45);
+            const degX = map(e.clientY, 0, window.innerHeight, 45, -45);
+            clockContainer.style.setProperty('--clock-rx', degX);
+            clockContainer.style.setProperty('--clock-ry', degY);
+        });
+
+        // 鼠标离开，重置鼠标缩放和旋转
+        document.body.addEventListener("mouseleave", (e) => {
+            clockContainer.classList.add('smooth-leave');
+            clockContainer.style.setProperty('--clock-rx', 0);
+            clockContainer.style.setProperty('--clock-ry', 0);
+            clockContainer.style.setProperty('--clock-tz', 0);
+            setTimeout(() => clockContainer.classList.remove('smooth-leave'), 250);
+        });
+
+        // 触摸事件处理
+        let lastTouchDistance = 0;
+        let initialTouches = [];
+
+        document.body.addEventListener("touchstart", (e) => {
+            e.preventDefault();
+            initialTouches = Array.from(e.touches);
+            
+            if (e.touches.length === 2) {
+                // 双指开始，记录初始距离
+                const touch1 = e.touches[0];
+                const touch2 = e.touches[1];
+                lastTouchDistance = Math.hypot(
+                    touch2.clientX - touch1.clientX,
+                    touch2.clientY - touch1.clientY
+                );
+            }
+        });
+
+        document.body.addEventListener("touchmove", (e) => {
+            e.preventDefault();
+            
+            if (e.touches.length === 1) {
+                // 单指旋转
+                const touch = e.touches[0];
+                const degY = map(touch.clientX, 0, window.innerWidth, -45, 45);
+                const degX = map(touch.clientY, 0, window.innerHeight, 45, -45);
+                clockContainer.style.setProperty('--clock-rx', degX);
+                clockContainer.style.setProperty('--clock-ry', degY);
+            } else if (e.touches.length === 2) {
+                // 双指缩放
+                const touch1 = e.touches[0];
+                const touch2 = e.touches[1];
+                const currentDistance = Math.hypot(
+                    touch2.clientX - touch1.clientX,
+                    touch2.clientY - touch1.clientY
+                );
+                
+                const scaleChange = currentDistance - lastTouchDistance;
+                const currentValue = clockContainer.style.getPropertyValue('--clock-tz');
+                const newValue = Number(currentValue) + (scaleChange * 2);
+                clockContainer.style.setProperty('--clock-tz', cap(newValue, 0, 1000));
+                
+                lastTouchDistance = currentDistance;
+            }
+        });
+
+        document.body.addEventListener("touchend", (e) => {
+            if (e.touches.length === 0) {
+                // 所有触摸结束，重置
+                clockContainer.classList.add('smooth-leave');
+                clockContainer.style.setProperty('--clock-rx', 0);
+                clockContainer.style.setProperty('--clock-ry', 0);
+                clockContainer.style.setProperty('--clock-tz', 0);
+                setTimeout(() => clockContainer.classList.remove('smooth-leave'), 250);
+            }
+        });
+
+        // 辅助函数
+        function setDice(dice, val) {
+            // 第一个数字
+            const digit1 = Math.floor(val / 10);
+            const digit1top = Math.floor(digit1 / 2); // 顶部
+            const digit1bottom = digit1 - digit1top; // 底部
+            
+            // 第二个数字
+            const digit2 = val % 10;
+            const digit2top = Math.floor(digit2 / 2); // 顶部
+            const digit2bottom = digit2 - digit2top; // 底部
+            
+            // 设置data-nr
+            document.querySelector(`.${dice}1t`).dataset.nr = digit1top;
+            document.querySelector(`.${dice}1b`).dataset.nr = digit1bottom;
+            document.querySelector(`.${dice}2t`).dataset.nr = digit2top;
+            document.querySelector(`.${dice}2b`).dataset.nr = digit2bottom;
+        }
+
+        function map(value, in_min, in_max, out_min, out_max) {
+            value = cap(value, in_min, in_max);
+            return (value - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+        }
+
+        function cap(value, min, max) {
+            return Math.min(Math.max(value, min), max);
+        }
+    </script>
+</body>
+</html>
