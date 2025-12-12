@@ -8,6 +8,7 @@ if(!fileExist(本地号)||Number(request(本地号)) < 最新号){
     deleteFile(本地号);
     deleteFile(本地源);
     downloadFile(最新源, 本地源);
+    downloadFile(最新号, 本地号);
     saveFile(本地号, 最新号);
     hideLoading();
 };
