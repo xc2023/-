@@ -42,18 +42,9 @@ try {
 
 // 使用本地文件
 let x5_app = getPath(本地HTML);
-/* [{
+ [{
     title: '时钟天气',
     url: x5_app,
     col_type: 'x5_webview_single',
     desc: '160&&list',
-}]*/
-
-if (MY_RULE.title == "我的主页") {
-    l.push({
-        url: x5_app,
-        desc: "50&&list",
-        col_type: "x5_webview_single"
-    });
-    l
-}
+}]
