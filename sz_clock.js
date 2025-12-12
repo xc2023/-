@@ -1,65 +1,69 @@
-var l = [];
-var 版本号 = '20251212';
-var 版本文件 = "hiker://files/xc2022/szbb_clock.js";
+// 只需要一个HTML文件，JS文件仅用于版本控制
+var 本地HTML = 'hiker://files/xc2022/sz_clock.html';
+var 本地JS = 'hiker://files/xc2022/szbb_clock.js';
+var 远程HTML = 'https://raw.githubusercontent.com/xc2023/-/refs/heads/main/sz_clock.html';
+var 远程JS = 'https://raw.githubusercontent.com/xc2023/-/refs/heads/main/szbb_clock.js';
 
-// 检查并更新文件
+// 确保目录存在
+if (!dirExist('hiker://files/xc2022/')) {
+    createDir('hiker://files/xc2022/');
+}
+
+// 简化的更新逻辑：只检查JS版本文件是否存在和是否需要更新
 try {
-    var 最新HTML = "https://raw.githubusercontent.com/xc2023/-/refs/heads/main/sz_clock.html";
-    var 最新JS = "https://raw.githubusercontent.com/xc2023/-/refs/heads/main/szbb_clock.js";
-    var 本地HTML = "hiker://files/xc2022/sz_clock.html";
+    var 需要更新 = false;
     
-    // 确保目录存在
-    var dirPath = 'hiker://files/xc2022/';
-    if (!dirExist(dirPath)) {
-        createDir(dirPath);
+    // 如果JS文件不存在，需要更新
+    if (!fileExist(本地JS)) {
+        需要更新 = true;
+    } else {
+        // 获取远程JS内容进行比较
+        var 远程内容 = request(远程JS, {method: 'GET'}).trim();
+        var 本地内容 = readFile(本地JS).trim();
+        
+        if (远程内容 !== 本地内容) {
+            需要更新 = true;
+        }
     }
     
-    // 检查是否需要更新
-    // 条件：本地HTML不存在 或 版本文件不存在 或 版本文件内容不是最新
-    if (!fileExist(本地HTML) || !fileExist(版本文件) || request(版本文件) !== 版本号) {
-        // 下载JS版本文件
+    // 如果HTML文件不存在，也需要更新
+    if (!fileExist(本地HTML)) {
+        需要更新 = true;
+    }
+    
+    // 如果需要更新，下载两个文件
+    if (需要更新) {
+        showLoading('更新中...');
+        
+        // 下载JS文件
         try {
-            var jsContent = request(最新JS, {method: 'GET'});
-            saveFile(jsContent, 版本文件);
+            var js内容 = request(远程JS, {method: 'GET'});
+            saveFile(js内容, 本地JS);
         } catch (e) {
             console.log('下载JS文件失败：' + e);
-            // 如果下载失败，创建默认版本文件
-            saveFile(版本号, 版本文件);
+            // 创建默认JS文件
+            saveFile('20251212', 本地JS);
         }
         
         // 下载HTML文件
         try {
-            downloadFile(最新HTML, 本地HTML);
+            downloadFile(远程HTML, 本地HTML);
         } catch (e) {
             console.log('下载HTML文件失败：' + e);
         }
+        
+        hideLoading();
+        toast('更新完成');
     }
 } catch (error) {
-    console.log('更新文件时出错：' + error);
+    console.log('更新检查失败：' + error);
 }
 
-// 加载本地HTML文件
-if (fileExist(本地HTML)) {
-    l.push({
-        title: '时钟天气',
-        url: getPath(本地HTML),
-        desc: "160&&list",
-        col_type: "x5_webview_single",
-        exea: {
-            autoPlay: true
-        }
-    });
-} else {
-    // 如果本地文件不存在，直接使用远程URL
-    l.push({
-        title: '时钟天气',
-        url: "https://raw.githubusercontent.com/xc2023/-/refs/heads/main/sz_clock.html",
-        desc: "160&&list",
-        col_type: "x5_webview_single",
-        exea: {
-            autoPlay: true
-        }
-    });
-}
-
-l;
+// 直接返回本地HTML文件路径
+let x5_app = getPath(本地HTML);
+[{
+    title: '时钟天气',
+    url: x5_app,
+    col_type: 'x5_webview_single',
+    desc: '160&&list',
+}]
