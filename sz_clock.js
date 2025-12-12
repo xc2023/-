@@ -1,4 +1,4 @@
-var 最新号 = 20251212;
+var 最新号 = 'https://raw.githubusercontent.com/xc2023/-/refs/heads/main/szbb_clock.js';
 var 最新源 = 'https://raw.githubusercontent.com/xc2023/-/refs/heads/main/sz_clock.html';
 var 本地源 = 'hiker://files/xc2022/sz_clock.html';
 var 本地号 = 'hiker://files/xc2022/szbb_clock.js';
