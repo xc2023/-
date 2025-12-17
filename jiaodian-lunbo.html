@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width">
+  <title>推</title>
+  <style>
+    @import url(https://fonts.bunny.net/css?family=jura:300,500);
+    
+    * {
+      -webkit-user-select: none;
+      -moz-user-select: none;
+      -ms-user-select: none;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+      tap-highlight-color: transparent;
+    }
+
+    :root {
+      --bg-color: #dddddd;
+      --text-color: #222222;
+    }
+         
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg-color: #1a1a1a;
+        --text-color: #ffffff;
+      }
+    }
+    
+    body {
+      margin: 0;
+      padding: 6px 15px;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      font-family: "Jura", sans-serif;
+      display: flex;
+      justify-content: center;
+      min-height: 220px;
+    }
+
+    .carousel-container {
+      width: 100%;
+      max-width: 600px;
+      position: relative;
+      height: 220px;
+      overflow: hidden;
+    }
+
+    .carousel {
+      width: 100%;
+      height: 100%;
+      position: relative;
+    }
+
+    .carousel-item {
+      position: absolute;
+      top: 0;
+      height: 200px;
+      width: 140px;
+      cursor: pointer;
+      overflow: hidden;
+      border-radius: 8px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+      box-sizing: border-box;
+      border: 1px solid rgba(255,255,255,0.3);
+      transition: all 0.5s ease;
+      transform-origin: center;
+    }
+
+    .carousel-item.center {
+      left: 50%;
+      transform: translateX(-50%) scale(1);
+      z-index: 3;
+    }
+
+    .carousel-item.left {
+      left: 20%;
+      transform: translateX(-50%) scale(0.8);
+      z-index: 2;
+      opacity: 0.7;
+    }
+
+    .carousel-item.right {
+      left: 80%;
+      transform: translateX(-50%) scale(0.8);
+      z-index: 2;
+      opacity: 0.7;
+    }
+
+    .carousel-item.hidden-left {
+      left: 0%;
+      transform: translateX(-50%) scale(0.6);
+      z-index: 1;
+      opacity: 0.4;
+    }
+
+    .carousel-item.hidden-right {
+      left: 100%;
+      transform: translateX(-50%) scale(0.6);
+      z-index: 1;
+      opacity: 0.4;
+    }
+
+    .carousel-item.hidden {
+      opacity: 0;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    .box {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      pointer-events: none;
+    }
+
+    .overlay {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 70px;
+      background: linear-gradient(to top, rgba(0,0,0,0.9), transparent);
+      z-index: 2;
+    }  
+
+    .img-title {
+      position: absolute;
+      bottom: 3px;
+      left: 0;
+      right: 0;
+      color: #fff;
+      font-weight: 600;
+      font-size: 0.8rem;
+      line-height: 1.2;
+      text-align: center;
+      z-index: 3;
+      pointer-events: none;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      padding: 0 10px;
+    }
+
+    .nav-button {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 40px;
+      height: 40px;
+      background-color: rgba(15, 23, 43, 0.7);
+      color: white;
+      border: none;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      z-index: 10;
+      opacity: 0.7;
+      transition: all 150ms ease-in-out;
+    }
+    
+    .nav-button:hover {
+      opacity: 1;
+    }
+    
+    .nav-prev {
+      left: 10px;
+    }
+    
+    .nav-next {
+      right: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="carousel-container">
+    <button class="nav-button nav-prev">&#10094;</button>
+    <div class="carousel">
+      <!-- Items will be dynamically inserted here -->
+    </div>
+    <button class="nav-button nav-next">&#10095;</button>
+  </div>
+
+  <script>
+    // 全局变量
+    window.carouselData = [];
+    window.currentIndex = 0;
+    window.maxItems = 5; // 最多显示5张
+
+    // Function to update carousel content
+    function updateCarousel(data) {
+      const carousel = document.querySelector('.carousel');
+      if (!carousel) return;
+      
+      // 只取前5张图片
+      window.carouselData = Array.isArray(data) ? data.slice(0, window.maxItems) : [];
+      window.currentIndex = 0;
+      
+      // 如果数据为空，使用默认数据（5张）
+      if (window.carouselData.length === 0) {
+        window.carouselData = [
+          {
+            title: "默认轮播图1",
+            img: "https://picsum.photos/800/400?random=1",
+            url: "https://www.example.com"
+          },
+          {
+            title: "默认轮播图2",
+            img: "https://picsum.photos/800/400?random=2",
+            url: "https://www.example.com"
+          },
+          {
+            title: "默认轮播图3",
+            img: "https://picsum.photos/800/400?random=3",
+            url: "https://www.example.com"
+          },
+          {
+            title: "默认轮播图4",
+            img: "https://picsum.photos/800/400?random=4",
+            url: "https://www.example.com"
+          },
+          {
+            title: "默认轮播图5",
+            img: "https://picsum.photos/800/400?random=5",
+            url: "https://www.example.com"
+          }
+        ];
+      }
+      
+      // 清空现有内容
+      carousel.innerHTML = '';
+      
+      // 创建项目
+      window.carouselData.forEach((item, index) => {
+        const container = document.createElement('div');
+        container.className = 'carousel-item';
+        container.setAttribute('data-index', index);
+        
+        container.innerHTML = 
+          '<img src="' + item.img + '" class="box" alt="' + item.title + '">' +
+          '<div class="overlay"></div>' +
+          '<p class="img-title">' + item.title + '</p>';
+        
+        container.addEventListener('click', function() {
+          if (item.url) {
+            window.open(item.url, '_blank');
+          }
+        });
+        
+        carousel.appendChild(container);
+      });
+      
+      // 更新位置
+      updatePositions();
+    }
+
+    function updatePositions() {
+      const items = document.querySelectorAll('.carousel-item');
+      const totalItems = items.length;
+      
+      // 如果图片少于5张，调整显示逻辑
+      if (totalItems <= 3) {
+        items.forEach((item, index) => {
+          item.className = 'carousel-item';
+          if (index === currentIndex) {
+            item.classList.add('center');
+          } else {
+            item.classList.add('hidden');
+          }
+        });
+        return;
+      }
+      
+      items.forEach((item, index) => {
+        item.className = 'carousel-item';
+        
+        // 计算相对位置
+        let relativePos = (index - currentIndex + totalItems) % totalItems;
+        
+        if (relativePos === 0) {
+          item.classList.add('center');
+        } else if (relativePos === 1) {
+          item.classList.add('right');
+        } else if (relativePos === totalItems - 1) {
+          item.classList.add('left');
+        } else if (relativePos === 2) {
+          item.classList.add('hidden-right');
+        } else if (relativePos === totalItems - 2) {
+          item.classList.add('hidden-left');
+        } else {
+          item.classList.add('hidden');
+        }
+      });
+    }
+
+    function nextSlide() {
+      const totalItems = window.carouselData.length;
+      if (totalItems <= 1) return;
+      
+      currentIndex = (currentIndex + 1) % totalItems;
+      updatePositions();
+    }
+
+    function prevSlide() {
+      const totalItems = window.carouselData.length;
+      if (totalItems <= 1) return;
+      
+      currentIndex = (currentIndex - 1 + totalItems) % totalItems;
+      updatePositions();
+    }
+
+    // Initialize carousel with default data
+    updateCarousel(window.carouselData);
+
+    // Navigation controls
+    document.querySelector('.nav-prev').addEventListener('click', prevSlide);
+    document.querySelector('.nav-next').addEventListener('click', nextSlide);
+
+    // Auto play
+    setInterval(nextSlide, 3000);
+
+    // Expose function globally
+    window.initCarousel = updateCarousel;
+
+    // 禁止长按图片弹出菜单
+    document.addEventListener('contextmenu', function(e) {
+      e.preventDefault();
+    });
+  </script>
+</body>
+</html>
