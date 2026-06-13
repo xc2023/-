@@ -1,0 +1,772 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"><title>爱壹帆 · 动态轮播+立体卡片</title>
+    <style>*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}html,body{min-height:100%;background:linear-gradient(135deg,#1e90ff,#ff6347)!important;background-attachment:fixed!important}body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;color:#e0e0e0}.header{height:52px;background:linear-gradient(135deg,#0a0e27,#1a1f4e);backdrop-filter:blur(12px);display:flex;align-items:center;padding:0 12px;gap:10px;position:sticky;top:0;z-index:100;box-shadow:0 2px 12px rgba(0,0,0,0.4)}.logo-img{height:24px;width:auto;object-fit:contain;flex-shrink:0}.logo-text{font-size:18px;font-weight:700;white-space:nowrap;color:#4fc3f7;flex-shrink:0}.header-search{position:relative;display:flex;align-items:center;flex:1;min-width:0}.galaxy{height:50px;width:400px;background-image:radial-gradient(#ffffff 1px,transparent 1px),radial-gradient(#ffffff 1px,transparent 1px);background-size:50px 50px;background-position:0 0,25px 25px;position:absolute;z-index:-1;animation:twinkle 5s infinite;left:50%;transform:translateX(-50%)}@keyframes twinkle{0%,100%{opacity:.5}50%{opacity:1}}.stardust,.cosmic-ring,.starfield,.nebula{max-height:44px;max-width:400px;height:100%;width:100%;position:absolute;overflow:hidden;z-index:-1;border-radius:10px;filter:blur(3px)}.search-container{display:flex;align-items:center;justify-content:center;width:100%}.cosmic-input{background-color:#fff;border:none;width:100%;height:36px;border-radius:8px;color:#a9c7ff;padding-inline:42px;font-size:13px}.cosmic-input::placeholder{color:#6e8cff}.cosmic-input:focus{outline:none}#cosmic-main:focus-within>#input-mask{display:none}#input-mask{pointer-events:none;width:80px;height:100%;position:absolute;background:linear-gradient(90deg,transparent 0%,rgba(0,0,0,.1) 30%,#05071b 100%);top:0;right:0;left:auto;border-radius:0 8px 8px 0}#cosmic-glow{pointer-events:none;width:20px;height:14px;position:absolute;background:#4d6dff;top:6px;left:4px;filter:blur(16px);opacity:.8;transition:all 2s}#cosmic-main:hover>#cosmic-glow{opacity:0}.stardust{max-height:40px;max-width:390px;border-radius:8px;filter:blur(2px)}.stardust::before{content:"";z-index:-2;text-align:center;top:50%;left:50%;transform:translate(-50%,-50%) rotate(83deg);position:absolute;width:600px;height:600px;background-repeat:no-repeat;background-position:0 0;filter:brightness(1.4);background-image:conic-gradient(rgba(0,0,0,0) 0%,#4d6dff,rgba(0,0,0,0) 8%,rgba(0,0,0,0) 50%,#6e8cff,rgba(0,0,0,0) 58%);transition:all 2s}.cosmic-ring{max-height:38px;max-width:386px;border-radius:9px;filter:blur(.5px)}.cosmic-ring::before{content:"";z-index:-2;text-align:center;top:50%;left:50%;transform:translate(-50%,-50%) rotate(70deg);position:absolute;width:600px;height:600px;filter:brightness(1.3);background-repeat:no-repeat;background-position:0 0;background-image:conic-gradient(#7f7e8a,#4d6dff 5%,#7f7e8a 14%,#7f7e8a 50%,#6e8cff 60%,#7f7e8a 64%);transition:all 2s}.starfield{max-height:42px;max-width:398px}.starfield::before{content:"";z-index:-2;text-align:center;top:50%;left:50%;transform:translate(-50%,-50%) rotate(82deg);position:absolute;width:600px;height:600px;background-repeat:no-repeat;background-position:0 0;background-image:conic-gradient(rgba(0,0,0,0),#1c2452,rgba(0,0,0,0) 10%,rgba(0,0,0,0) 50%,#2a3875,rgba(0,0,0,0) 60%);transition:all 2s}.search-container:hover>.starfield::before{transform:translate(-50%,-50%) rotate(-98deg)}.search-container:hover>.nebula::before{transform:translate(-50%,-50%) rotate(-120deg)}.search-container:hover>.stardust::before{transform:translate(-50%,-50%) rotate(-97deg)}.search-container:hover>.cosmic-ring::before{transform:translate(-50%,-50%) rotate(-110deg)}.search-container:focus-within>.starfield::before{transform:translate(-50%,-50%) rotate(442deg);transition:all 4s}.search-container:focus-within>.nebula::before{transform:translate(-50%,-50%) rotate(420deg);transition:all 4s}.search-container:focus-within>.stardust::before{transform:translate(-50%,-50%) rotate(443deg);transition:all 4s}.search-container:focus-within>.cosmic-ring::before{transform:translate(-50%,-50%) rotate(430deg);transition:all 4s}.nebula{overflow:hidden;filter:blur(30px);opacity:.4;max-height:80px;max-width:440px}.nebula:before{content:"";z-index:-2;text-align:center;top:50%;left:50%;transform:translate(-50%,-50%) rotate(60deg);position:absolute;width:999px;height:999px;background-repeat:no-repeat;background-position:0 0;background-image:conic-gradient(#000,#4d6dff 5%,#000 38%,#000 50%,#6e8cff 60%,#000 87%);transition:all 2s}#wormhole-icon{position:absolute;top:5px;right:5px;display:flex;align-items:center;justify-content:center;z-index:2;max-height:28px;max-width:28px;height:100%;width:100%;isolation:isolate;overflow:hidden;border-radius:8px;background:linear-gradient(180deg,#1c2452,#05071b,#2a3875);border:1px solid transparent}.wormhole-border{height:30px;width:30px;position:absolute;overflow:hidden;top:4px;right:4px;border-radius:8px}.wormhole-border::before{content:"";text-align:center;top:50%;left:50%;transform:translate(-50%,-50%) rotate(90deg);position:absolute;width:600px;height:600px;background-repeat:no-repeat;background-position:0 0;filter:brightness(1.35);background-image:conic-gradient(rgba(0,0,0,0),#4d6dff,rgba(0,0,0,0) 50%,rgba(0,0,0,0) 50%,#6e8cff,rgba(0,0,0,0) 100%);animation:rotate 4s linear infinite}#cosmic-main{position:relative;width:100%}#search-icon{position:absolute;left:14px;top:9px}@keyframes rotate{100%{transform:translate(-50%,-50%) rotate(450deg)}}.custom-carousel{position:relative;margin:12px 12px 0 12px;border-radius:16px;overflow:hidden;box-shadow:0 8px 20px rgba(0,0,0,0.25);background:#161628}.carousel-container{position:relative;width:100%;touch-action:pan-y pinch-zoom}.carousel-track{display:flex;transition:transform 0.3s ease-out;will-change:transform}.carousel-slide{flex-shrink:0;width:100%;cursor:pointer;position:relative}.carousel-slide img{width:100%;display:block;aspect-ratio:16 / 9;object-fit:cover;background:#161628}.slide-text{position:absolute;bottom:0;left:0;right:0;padding:20px 16px 28px;background:linear-gradient(to top,rgba(0,0,0,0.85),transparent);color:white}.slide-type{font-size:12px;background:rgba(0,0,0,0.6);display:inline-block;padding:2px 10px;border-radius:20px;margin-bottom:8px}.slide-title{font-size:20px;font-weight:bold;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.slide-desc{font-size:12px;opacity:0.85;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}@media (max-width:600px){.slide-title{font-size:16px}.slide-desc{font-size:10px;white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}.slide-text{padding:12px 12px 24px}}.carousel-dots{position:absolute;bottom:12px;left:0;right:0;display:flex;justify-content:center;gap:8px;z-index:5}.dot{width:8px;height:8px;background:rgba(255,255,255,0.5);border-radius:50%;transition:all 0.2s;cursor:pointer}.dot.active{background:#4fc3f7;width:20px;border-radius:12px}.carousel-arrow{position:absolute;top:50%;transform:translateY(-50%);width:36px;height:36px;background:rgba(0,0,0,0.5);backdrop-filter:blur(4px);border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-size:24px;cursor:pointer;z-index:5;transition:all 0.2s;user-select:none}.carousel-arrow:hover{background:rgba(0,0,0,0.7)}.arrow-left{left:12px}.arrow-right{right:12px}@media (max-width:600px){.carousel-arrow{width:28px;height:28px;font-size:18px}}.category-bar{display:flex;justify-content:space-between;gap:8px;padding:8px 12px;background:rgba(22,22,40,0.75);backdrop-filter:blur(8px);margin:12px 12px 0 12px;border-radius:20px;overflow-x:visible}.category-bar::-webkit-scrollbar{display:none}.category-item{flex:1;text-align:center;padding:6px 0;background:rgba(34,34,64,.7);border-radius:20px;font-size:13px;white-space:nowrap;cursor:pointer}.category-item.active{background:#4fc3f7;color:#fff}.list-section{padding:12px;background:transparent}.list-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.item{display:flex;flex-direction:column;cursor:pointer;background:rgba(22,22,40,0.7);backdrop-filter:blur(8px);border-radius:10px;overflow:hidden;box-shadow:0 8px 24px rgba(0,0,0,0.4),0 2px 6px rgba(0,0,0,0.25),0 1px 0 rgba(255,255,255,0.12) inset;transition:transform 0.25s ease-out,box-shadow 0.25s;transform:perspective(600px) rotateX(2deg);border:1px solid rgba(255,255,255,0.08)}.item:hover{transform:perspective(600px) rotateX(0deg) translateY(-8px) scale(1.03);box-shadow:0 20px 40px rgba(0,0,0,0.55),0 4px 12px rgba(0,0,0,0.35),0 1px 0 rgba(255,255,255,0.2) inset}.item:active{transform:perspective(600px) rotateX(0deg) scale(0.97);box-shadow:0 6px 16px rgba(0,0,0,0.3),0 1px 0 rgba(255,255,255,0.1) inset}.item-img-wrap{position:relative;border-radius:10px 10px 0 0;overflow:hidden;background:#161628}.item-img-wrap::after{content:"";position:absolute;top:0;left:0;right:0;height:40%;background:linear-gradient(to bottom,rgba(255,255,255,0.08),transparent);pointer-events:none}.item-img{width:100%;aspect-ratio:3/4;object-fit:cover;display:block}.img-tag,.img-remark{position:absolute;font-size:10px;padding:3px 8px;border-radius:20px;font-weight:500;backdrop-filter:blur(4px);letter-spacing:0.5px}.img-tag{top:8px;left:8px;background:linear-gradient(135deg,#4fc3f7,#2b9ed4);color:#fff;box-shadow:0 2px 6px rgba(0,0,0,0.2)}.img-remark{bottom:8px;right:8px;background:rgba(0,0,0,0.75);color:#ffd966;backdrop-filter:blur(4px)}.item-title{padding:6px 4px;font-size:12px;text-align:center;background:rgba(22,22,40,0.6);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);font-weight:500;line-height:1.3;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;border-top:1px solid rgba(255,255,255,0.1)}.search-overlay{position:fixed;inset:0;background:linear-gradient(135deg,#1e90ff,#ff6347)!important;background-attachment:fixed!important;z-index:150;display:none;overflow-y:auto}.search-list-vertical{display:flex;flex-direction:column;gap:12px}.search-item{display:flex;gap:0;background:rgba(22,22,40,0.75);backdrop-filter:blur(12px);border-radius:12px;overflow:hidden;cursor:pointer;box-shadow:0 12px 22px rgba(0,0,0,0.35),0 1px 0 0 rgba(255,255,255,0.2) inset,0 -1px 0 0 rgba(0,0,0,0.25) inset;transition:transform 0.2s,box-shadow 0.2s;border:1px solid rgba(255,255,255,0.12)}.search-item:hover{transform:translateY(-5px);box-shadow:0 20px 32px rgba(0,0,0,0.45),0 1px 0 0 rgba(255,255,255,0.25) inset,0 -1px 0 0 rgba(0,0,0,0.3) inset}.search-item:active{transform:scale(0.97);box-shadow:0 6px 12px rgba(0,0,0,0.25),0 1px 0 0 rgba(255,255,255,0.15) inset}.search-item-img{width:100px;height:133px;flex-shrink:0;background:#222;object-fit:cover;display:block;border-radius:12px;margin:8px 0 8px 8px;box-shadow:0 4px 8px rgba(0,0,0,0.3)}.search-item-info{flex:1;padding:10px 12px;display:flex;flex-direction:column;gap:6px;background:transparent}.search-item-title{font-size:16px;font-weight:700;color:#fff;line-height:1.3;text-shadow:0 1px 2px rgba(0,0,0,0.2)}.search-item-meta{display:flex;flex-wrap:wrap;gap:6px;font-size:11px;color:rgba(255,255,255,0.9)}.search-item-meta span{background:rgba(79,195,247,.25);padding:3px 10px;border-radius:20px;backdrop-filter:blur(2px);font-weight:500}.search-item-rating{color:#ffc107;background:rgba(255,193,7,.2)!important}.search-item-desc{font-size:12px;color:rgba(255,255,255,0.85);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.4}.detail-overlay{position:fixed;inset:0;background:rgba(0,0,0,.94);z-index:200;display:none;overflow-y:auto}.active{display:block!important}.search-nav{height:52px;background:rgba(22,22,40,0.9);backdrop-filter:blur(12px);display:flex;align-items:center;justify-content:space-between;padding:0 16px;position:sticky;top:0;z-index:10}.search-title{font-size:16px;font-weight:700;color:#fff}.detail-container{max-width:600px;margin:0 auto;padding:20px}.detail-close{text-align:right;margin-bottom:12px}.detail-close-btn{background:rgba(255,255,255,.15);border:none;color:#fff;width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:20px}.detail-poster-wrap{border-radius:12px;overflow:hidden;background:#161628;margin-bottom:16px;box-shadow:0 8px 20px rgba(0,0,0,0.3)}.detail-poster{width:100%;display:block}.detail-title{font-size:20px;font-weight:700;color:#fff;margin-bottom:8px}.detail-meta{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px;align-items:center}.detail-meta-tag{padding:4px 12px;border-radius:20px;font-size:11px;background:rgba(79,195,247,.2);color:#4fc3f7;border:1px solid rgba(79,195,247,.4)}.detail-meta-rating{background:rgba(255,193,7,.2);color:#ffc107;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700;border:1px solid rgba(255,193,7,.4)}.detail-desc{font-size:13px;color:rgba(224,224,224,.85);line-height:1.6;margin-bottom:16px}.detail-cast-title,.source-title,.episode-title{font-size:13px;color:rgba(224,224,224,.7);margin-bottom:8px;font-weight:600}.detail-cast-list{display:flex;gap:12px;overflow-x:auto;padding-bottom:6px}.detail-cast-list::-webkit-scrollbar{display:none}.detail-cast-item{flex-shrink:0;text-align:center;width:65px}.detail-cast-img{width:58px;height:58px;border-radius:50%;object-fit:cover;background:#222;margin-bottom:6px;display:block;border:2px solid rgba(79,195,247,0.5)}.detail-cast-name{font-size:10px;color:rgba(224,224,224,.8);overflow:hidden;white-space:nowrap;text-overflow:ellipsis}.source-list,.episode-list{display:flex;flex-wrap:wrap;gap:8px}.source-btn{padding:8px 16px;border-radius:30px;background:rgba(79,195,247,.2);border:1px solid rgba(79,195,247,.4);color:#4fc3f7;font-size:12px;cursor:pointer;transition:all 0.2s}.source-btn.active,.episode-btn.active{background:#4fc3f7;color:#fff;border-color:#4fc3f7}.episode-btn{padding:8px 14px;border-radius:12px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);color:#e0e0e0;font-size:12px;cursor:pointer;min-width:50px;text-align:center}.play-btn{display:block;width:100%;padding:14px;background:#2563eb;border:none;border-radius:12px;color:#fff;font-size:16px;font-weight:700;cursor:pointer;text-align:center;margin-bottom:10px;box-shadow:0 4px 12px rgba(0,0,0,0.3);transition:all 0.2s}.play-btn.loading{background:#f59e0b}.play-btn.success{background:#10b981}.play-btn.error{background:#ef4444}.parse-status{font-size:12px;margin:6px 0;min-height:18px;color:rgba(224,224,224,.7)}.parse-status.loading{color:#2563eb}.parse-status.error{color:#ef4444}.parse-status.success{color:#10b981}.parse-log{background:#0a0a1a;border-radius:12px;padding:12px;margin-top:12px;max-height:150px;overflow-y:auto;font-family:monospace;font-size:11px;color:#aaa}.parse-log .log-success{color:#10b981}.parse-log .log-error{color:#ef4444}.parse-log .log-info{color:#4fc3f7}.loading,.load-more,.no-more{text-align:center;padding:20px;color:rgba(255,255,255,0.8);font-size:13px;font-weight:500}.error-tip{text-align:center;padding:40px;color:#4fc3f7;font-size:14px}@media(min-width:600px){.list-grid{grid-template-columns:repeat(4,1fr)}}@media(min-width:900px){.list-grid{grid-template-columns:repeat(5,1fr)}}.back-to-top{position:fixed;bottom:30px;right:16px;width:42px;height:42px;border-radius:50%;background:rgba(79,195,247,0.85);backdrop-filter:blur(8px);border:none;color:#fff;font-size:20px;cursor:pointer;z-index:120;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 14px rgba(0,0,0,0.35);opacity:0;transform:translateY(20px);transition:opacity 0.3s,transform 0.3s;pointer-events:none}.back-to-top.show{opacity:1;transform:translateY(0);pointer-events:auto}.back-to-top:active{transform:scale(0.9)}</style>
+</head><body><div id=mainView><div class=header><img class=logo-img src="https://oss.bubitech.cn/upload/site/20241029-1/87266754387f01c28412630869f53f21.png" alt="爱壹帆" onerror="this.style.display='none';this.nextElementSibling.style.display='block'"><div class=logo-text style="display:none">爱壹帆</div><div class=header-search><div class=galaxy></div><div class=search-container><div class=nebula></div><div class=starfield></div><div class=stardust></div><div class=cosmic-ring></div><div id=cosmic-main><input class=cosmic-input id=searchInput placeholder="搜索影片..."><div id=input-mask></div><div id=cosmic-glow></div><div class=wormhole-border></div><div id=wormhole-icon><svg stroke-linejoin="round" stroke-linecap="round" stroke-width="2" stroke="#a9c7ff" fill="none" height="20" width="20" viewBox="0 0 24 24"><circle r="10" cy="12" cx="12"></circle><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path><path d="M2 12h20"></path></svg></div><div id=search-icon><svg stroke-linejoin="round" stroke-linecap="round" stroke-width="2" stroke="url(#cosmic-search)" fill="none" height="18" width="18" viewBox="0 0 24 24"><circle r="8" cy="11" cx="11"></circle><line y2="16.65" x2="16.65" y1="21" x1="21"></line><defs><linearGradient gradientTransform="rotate(45)" id="cosmic-search"><stop stop-color="#a9c7ff" offset="0%"></stop><stop stop-color="#6e8cff" offset="100%"></stop></linearGradient></defs></svg></div></div></div></div></div><div class="custom-carousel" id="carouselWrapper" style="display:none;"><div class="carousel-container"><div class="carousel-track" id="carouselTrack"></div><div class="carousel-dots" id="carouselDots"></div><div class="carousel-arrow arrow-left" id="carouselPrev">‹</div><div class="carousel-arrow arrow-right" id="carouselNext">›</div></div></div><div class=category-bar id=categoryBar></div><div class=list-section><div class=list-grid id=listGrid></div><div id=listTip></div></div></div><div class=search-overlay id=searchOverlay><div class=search-nav><div class=search-title id=searchKeywordTitle>搜索结果</div><button class=detail-close-btn id=searchCloseBtn>×</button></div><div class=list-section><div id=searchListContainer class=search-list-vertical></div><div id=searchListTip></div></div></div><div class=detail-overlay id=detailOverlay><div class=detail-container><div class=detail-close><button class=detail-close-btn id=detailClose>×</button></div><div class=detail-poster-wrap><img class=detail-poster id=detailPoster></div><div class=detail-title id=detailTitle>加载中...</div><div class=detail-meta id=detailMeta style=display:none></div><div class=detail-desc id=detailDesc></div><div class=detail-cast id=detailCast style=display:none><div class=detail-cast-title>主演</div><div class=detail-cast-list id=detailCastList></div></div><div class=source-section id=sourceSection style=display:none><div class=source-title>选择线路</div><div class=source-list id=sourceList></div></div><div class=episode-section id=episodeSection style=display:none><div class=episode-title>选集</div><div class=episode-list id=episodeList></div></div><button class=play-btn id=playBtn>正在解析...</button><div class=parse-status id=parseStatus></div><div class=parse-log id=parseLog style=display:none></div></div></div>
+<script>(function(){
+    const CONFIG = {
+        siteUrl: "https://www.yfvod.com",
+        categories: [
+            {id:"", name:"首页"},
+            {id:"1", name:"电影"},
+            {id:"2", name:"连续剧"},
+            {id:"3", name:"综艺"},
+            {id:"4", name:"动漫"}
+        ],
+        blockedKeywords: ["情色","伦理","ethical"],
+        tmdb: {
+            apiKey: "304ca56b1b7b57ca7a47d9b59946be94",
+            base: "https://api.tmdb.org/3",
+            imageBase: "https://images.tmdb.org/t/p/w342"
+        }
+    };
+    let state = {
+        cat: "",
+        page: 1,
+        loading: false,
+        hasMore: true,
+        vodList: [],
+        searchMode: false,
+        searchKeyword: "",
+        searchPage: 1,
+        searchHasMore: true,
+        searchVodList: [],
+        currentVod: null,
+        detailData: null,
+        playData: null,
+        currentSource: 0,
+        currentEpisode: 0
+    };
+    const $ = (s) => document.querySelector(s);
+    async function request(url, referer) {
+        if (window.fm && typeof window.fm.req === "function") {
+            const resp = await window.fm.req(url, {
+                method: "GET",
+                responseType: "text",
+                timeout: 30,
+                credentials: "include",
+                headers: { "User-Agent": "Mozilla/5.0", "Referer": referer || CONFIG.siteUrl + "/" }
+            });
+            if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+            return resp.body;
+        }
+        const resp = await fetch(url, {
+            headers: { "User-Agent": "Mozilla/5.0", "Referer": referer || CONFIG.siteUrl + "/" }
+        });
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+        return await resp.text();
+    }
+    function resolveUrl(u) {
+        if (!u) return "";
+        if (window.fm && window.fm.res) return window.fm.res(u, { credentials: "include" });
+        if (u.startsWith("//")) return "https:" + u;
+        if (u.startsWith("/")) return CONFIG.siteUrl + u;
+        return u;
+    }
+    async function tmdbSearch(keyword) {
+        try {
+            const url = `${CONFIG.tmdb.base}/search/multi?api_key=${CONFIG.tmdb.apiKey}&language=zh-CN&query=${encodeURIComponent(keyword)}&include_adult=false&page=1`;
+            const resp = await fetch(url);
+            if (!resp.ok) return [];
+            const data = await resp.json();
+            return (data.results || []).filter(r => r.media_type === "movie" || r.media_type === "tv").slice(0,10).map(r => ({
+                tmdbId: String(r.id),
+                mediaType: r.media_type,
+                title: r.title || r.name || "",
+                overview: r.overview || "",
+                poster: r.poster_path ? `https://images.tmdb.org/t/p/w342${r.poster_path}` : "",
+                rating: r.vote_average || 0,
+                year: (r.release_date || r.first_air_date || "").substring(0,4)
+            }));
+        } catch(e) { return []; }
+    }
+    function parseVodList(html) {
+        const items = [];
+        const doc = new DOMParser().parseFromString(html, "text/html");
+        const links = doc.querySelectorAll('a.hl-item-thumb.hl-lazy, a.hl-br-thumb.hl-lazy');
+        for (let a of links) {
+            let href = a.getAttribute("href");
+            let title = a.getAttribute("title") || "";
+            let img = a.getAttribute("data-original") || "";
+            let remark = a.querySelector(".remarks")?.textContent?.trim() || "";
+            let tag = a.querySelector(".state, .version")?.textContent?.trim() || "";
+            let blocked = CONFIG.blockedKeywords.some(k => title.includes(k) || remark.includes(k) || tag.includes(k));
+            if (title && href && !blocked) {
+                items.push({ vod_id: href, vod_name: title, vod_pic: img, vod_tag: tag, vod_remarks: remark });
+            }
+        }
+        return items;
+    }
+    async function fetchCarouselData() {
+        try {
+            const html = await request(CONFIG.siteUrl, CONFIG.siteUrl);
+            const doc = new DOMParser().parseFromString(html, "text/html");
+            const items = [];
+            const slides = doc.querySelectorAll('#conch-banner .hl-br-item');
+            for (let slide of slides) {
+                const a = slide.querySelector('a');
+                if (!a) continue;
+                const link = a.getAttribute('href');
+                const img = a.getAttribute('data-original') || '';
+                const titleElem = slide.querySelector('.hl-br-title');
+                const typeElem = slide.querySelector('.hl-br-type');
+                const descElem = slide.querySelector('.hl-br-sub');
+                const title = titleElem ? titleElem.textContent.trim() : '';
+                const type = typeElem ? typeElem.textContent.trim() : '';
+                const desc = descElem ? descElem.textContent.trim() : '';
+                if (link && title) {
+                    items.push({ link, img, title, type, desc });
+                }
+            }
+            return items;
+        } catch(e) {
+            console.error('获取轮播数据失败', e);
+            return [];
+        }
+    }
+    let carouselIndex = 0;
+    let carouselInterval = null;
+    let carouselItems = [];          // 原始数据
+    let carouselDisplayItems = [];   // 用于无缝循环的扩展数组（首尾复制）
+    let track = null, dotsContainer = null;
+    function buildCarousel(items) {
+        if (!items || items.length === 0) {
+            document.getElementById('carouselWrapper').style.display = 'none';
+            return;
+        }
+        carouselItems = items;
+        carouselDisplayItems = [...items, ...items];
+        track = document.getElementById('carouselTrack');
+        dotsContainer = document.getElementById('carouselDots');
+        if (!track) return;
+        track.innerHTML = '';
+        carouselDisplayItems.forEach((item, idx) => {
+            const slide = document.createElement('div');
+            slide.className = 'carousel-slide';
+            slide.innerHTML = `
+                <img src="${item.img}" alt="${item.title}" loading="lazy">
+                <div class="slide-text">
+                    <div class="slide-type">${escapeHtml(item.type)}</div>
+                    <div class="slide-title">${escapeHtml(item.title)}</div>
+                    <div class="slide-desc">${escapeHtml(item.desc)}</div>
+                </div>
+            `;
+            slide.addEventListener('click', () => {
+                openDetail({ vod_id: item.link, vod_name: item.title, vod_pic: item.img, vod_tag: item.type, vod_remarks: item.desc });
+            });
+            track.appendChild(slide);
+        });
+        dotsContainer.innerHTML = '';
+        for (let i = 0; i < items.length; i++) {
+            const dot = document.createElement('div');
+            dot.className = 'dot';
+            dot.addEventListener('click', () => goToSlide(i));
+            dotsContainer.appendChild(dot);
+        }
+        carouselIndex = 0;
+        updateCarousel(false);
+        startAutoPlay();
+        document.getElementById('carouselWrapper').style.display = 'block';
+    }
+    function updateCarousel(animate = true) {
+        if (!track) return;
+        const slideWidth = track.parentElement.clientWidth;
+        const displayIndex = carouselIndex % carouselDisplayItems.length;
+        track.style.transition = animate ? 'transform 0.3s ease-out' : 'none';
+        track.style.transform = `translateX(-${displayIndex * slideWidth}px)`;
+        const activeDotIndex = carouselIndex % carouselItems.length;
+        const dots = document.querySelectorAll('.dot');
+        dots.forEach((dot, idx) => {
+            if (idx === activeDotIndex) dot.classList.add('active');
+            else dot.classList.remove('active');
+        });
+    }
+    function goToSlide(index) {
+        if (index < 0) index = 0;
+        if (index >= carouselItems.length) index = carouselItems.length - 1;
+        carouselIndex = index;
+        updateCarousel(true);
+        resetAutoPlay();
+    }
+    function nextSlide() {
+        carouselIndex++;
+        updateCarousel(true);
+        if (carouselIndex >= carouselItems.length * 2) {
+            setTimeout(() => {
+                carouselIndex = carouselIndex % carouselItems.length;
+                updateCarousel(false);
+            }, 300);
+        }
+        resetAutoPlay();
+    }
+    function prevSlide() {
+        carouselIndex--;
+        updateCarousel(true);
+        if (carouselIndex < 0) {
+            setTimeout(() => {
+                carouselIndex = carouselIndex + carouselItems.length;
+                updateCarousel(false);
+            }, 300);
+        }
+        resetAutoPlay();
+    }
+    function startAutoPlay() {
+        if (carouselInterval) clearInterval(carouselInterval);
+        carouselInterval = setInterval(() => nextSlide(), 5000);
+    }
+    function resetAutoPlay() {
+        if (carouselInterval) {
+            clearInterval(carouselInterval);
+            startAutoPlay();
+        }
+    }
+    function initCarouselTouch() {
+        const container = document.querySelector('.carousel-container');
+        if (!container) return;
+        let touchStartX = 0;
+        container.addEventListener('touchstart', (e) => {
+            touchStartX = e.changedTouches[0].screenX;
+            resetAutoPlay();
+        });
+        container.addEventListener('touchend', (e) => {
+            const touchEndX = e.changedTouches[0].screenX;
+            const diff = touchEndX - touchStartX;
+            if (Math.abs(diff) > 50) {
+                if (diff > 0) prevSlide();
+                else nextSlide();
+                resetAutoPlay();
+            }
+        });
+    }
+    window.addEventListener('resize', () => updateCarousel(false));
+    const cache = {
+        getKey(cat, page) { return `yf_cache_${cat||"home"}_${page}`; },
+        async get(cat, page) {
+            try {
+                let raw = localStorage.getItem(this.getKey(cat, page));
+                if (raw) {
+                    let obj = JSON.parse(raw);
+                    if (Date.now() - obj.ts < 300000) return obj.data;
+                }
+            } catch(e) {}
+            return null;
+        },
+        async set(cat, page, data) {
+            try {
+                localStorage.setItem(this.getKey(cat, page), JSON.stringify({ ts: Date.now(), data }));
+            } catch(e) {}
+        }
+    };
+    function buildCategoryUrl(cat, page) {
+        if (!cat) return CONFIG.siteUrl + "/";
+        if (page <= 1) return `${CONFIG.siteUrl}/vod-show/${cat}-----------.html`;
+        return `${CONFIG.siteUrl}/vod-show/${cat}--------${page}---.html`;
+    }
+    async function loadPage(refresh = false) {
+        if (!refresh && state.page === 1) {
+            let cached = await cache.get(state.cat, state.page);
+            if (cached) {
+                state.vodList = cached;
+                renderGridList(false);
+                return;
+            }
+        }
+        state.loading = true;
+        const tip = $("#listTip");
+        tip.innerHTML = '<div class="loading">加载中...</div>';
+        try {
+            let url = buildCategoryUrl(state.cat, state.page);
+            let html = await request(url, CONFIG.siteUrl);
+            let items = parseVodList(html);
+            state.vodList = items;
+            state.hasMore = state.cat !== "" && items.length >= 18;
+            if (state.page === 1) await cache.set(state.cat, state.page, state.vodList);
+            renderGridList(false);
+        } catch(e) {
+            tip.innerHTML = '<div class="error-tip">加载失败，请检查网络</div>';
+            state.vodList = [];
+        }
+        state.loading = false;
+    }
+    function renderGridList(isAppend, newItems) {
+        const grid = $("#listGrid");
+        const tip = $("#listTip");
+        if (!grid) return;
+        if (!isAppend) grid.innerHTML = "";
+        const list = state.vodList;
+        const itemsToRender = isAppend ? newItems : list;
+        for (let item of itemsToRender) {
+            const div = document.createElement("div");
+            div.className = "item";
+            let pic = resolveUrl(item.vod_pic);
+            let tagHtml = item.vod_tag ? `<span class="img-tag">${escapeHtml(item.vod_tag)}</span>` : '';
+            let remarkHtml = item.vod_remarks ? `<span class="img-remark">${escapeHtml(item.vod_remarks)}</span>` : '';
+            div.innerHTML = `
+                <div class="item-img-wrap">
+                    <img class="item-img" src="${pic}" loading="lazy" onerror="this.src='${pic}'">
+                    ${tagHtml}
+                    ${remarkHtml}
+                </div>
+                <div class="item-title">${escapeHtml(item.vod_name)}</div>
+            `;
+            div.addEventListener("click", () => openDetail(item));
+            grid.appendChild(div);
+        }
+        tip.innerHTML = state.hasMore ? '<div class="load-more">上滑加载更多</div>' : '<div class="no-more">没有更多了</div>';
+    }
+    function renderSearchList(isAppend, newItems) {
+        const container = $("#searchListContainer");
+        const tip = $("#searchListTip");
+        if (!container) return;
+        if (!isAppend) container.innerHTML = "";
+        const list = state.searchVodList;
+        const itemsToRender = isAppend ? newItems : list;
+        for (let item of itemsToRender) {
+            const div = document.createElement("div");
+            div.className = "search-item";
+            let pic = item.tmdbPoster || resolveUrl(item.vod_pic);
+            let metaHtml = `<div class="search-item-meta">`;
+            let typeLabel = item.tmdbType === "movie" ? "电影" : (item.tmdbType === "tv" ? "剧集" : (item.vod_tag || "影片"));
+            metaHtml += `<span>${escapeHtml(typeLabel)}</span>`;
+            if (item.tmdbYear) metaHtml += `<span>${escapeHtml(item.tmdbYear)}</span>`;
+            if (item.vod_remarks) metaHtml += `<span>${escapeHtml(item.vod_remarks)}</span>`;
+            if (item.tmdbRating > 0) metaHtml += `<span class="search-item-rating">⭐ ${item.tmdbRating.toFixed(1)}</span>`;
+            metaHtml += `</div>`;
+            let desc = item.tmdbOverview || "";
+            div.innerHTML = `
+                <img class="search-item-img" src="${pic}" loading="lazy" onerror="this.src='${resolveUrl(item.vod_pic)}'">
+                <div class="search-item-info">
+                    <div class="search-item-title">${escapeHtml(item.vod_name)}</div>
+                    ${metaHtml}
+                    <div class="search-item-desc">${escapeHtml(desc) || "暂无简介"}</div>
+                </div>
+            `;
+            div.addEventListener("click", () => openDetail(item));
+            container.appendChild(div);
+        }
+        tip.innerHTML = state.searchHasMore ? '<div class="load-more">上滑加载更多</div>' : '<div class="no-more">没有更多了</div>';
+    }
+    function escapeHtml(str) {
+        if (!str) return "";
+        return str.replace(/[&<>]/g, function(m) {
+            if (m === '&') return '&amp;';
+            if (m === '<') return '&lt;';
+            if (m === '>') return '&gt;';
+            return m;
+        });
+    }
+    function parseDetail(html, id) {
+        const doc = new DOMParser().parseFromString(html, "text/html");
+        let name = doc.querySelector('h1')?.textContent?.trim() || "影片详情";
+        let pic = doc.querySelector('.hl-lazy[data-original]')?.getAttribute("data-original") || "";
+        let desc = doc.querySelector('.hl-content-text')?.textContent?.trim() || "";
+        let year = doc.querySelector('.hl-text-conch')?.textContent?.trim() || "";
+        let sources = [];
+        const playSourceDiv = doc.querySelector('.hl-play-source');
+        if (playSourceDiv) {
+            const tabs = playSourceDiv.querySelectorAll('.hl-plays-from .hl-tabs-btn');
+            const panels = playSourceDiv.querySelectorAll('.hl-tabs-box');
+            tabs.forEach((tab, idx) => {
+                let srcName = tab.getAttribute("alt") || tab.textContent?.trim() || "";
+                let episodes = [];
+                let panel = panels[idx];
+                if (panel) {
+                    panel.querySelectorAll('a[href*="vod-play/"]').forEach(a => {
+                        let epHref = a.getAttribute("href");
+                        let epName = a.textContent?.trim();
+                        if (epHref && epName) episodes.push({ name: epName, href: epHref });
+                    });
+                }
+                if (srcName) sources.push({ name: srcName, href: episodes[0]?.href || "", episodes });
+            });
+        }
+        let firstSource = sources[0];
+        return {
+            vod_id: id,
+            vod_name: name,
+            vod_pic: pic,
+            vod_content: desc,
+            year,
+            sources,
+            episodes: firstSource?.episodes || []
+        };
+    }
+    const PARSE_MAP = {
+        "qq":"https://svip.qlplayer.cyou/?url=", "qiyi":"https://svip.qlplayer.cyou/?url=",
+        "youku":"https://svip.qlplayer.cyou/?url=", "mgtv":"https://svip.qlplayer.cyou/?url=",
+        "dyttm3u8":"https://play.yfvod.com/?url=", "jsm3u8":"https://play.yfvod.com/?url=",
+        "dbm3u8":"https://play.yfvod.com/?url=", "wolong":"https://play.yfvod.com/?url=",
+        "modum3u8":"https://play.yfvod.com/?url=", "tpm3u8":"https://play.yfvod.com/?url=",
+        "mtm3u8":"https://play.yfvod.com/?url=", "hnm3u8":"https://www.hnjiexi.com/m3u8/?url=",
+        "gsm3u8":"https://www.guangsujx.com/m3u8/?url=", "jinyingm3u8":"https://hd.iapijy.com/play?url=",
+        "xlm3u8":"https://www.xlzyfa.com/m3u8/?url=", "360zy":"https://www.360jiexi.com/player/?url=",
+        "bfzym3u8":"https://vip.vipuuvip.com/?url=", "ffm3u8":"https://svip.ffzyplay.com/?url=",
+        "nnm3u8":"https://jiexi.niuniuzy.org/m3u8/?url=", "miaoparty":"https://play.yfvod.com/p3/?url=",
+        "heimuer":"https://hoplayer.com/index.html?url=", "kuaikan":"https://kkzyplayer.com/player/?url="
+    };
+    async function parsePlayPage(playUrl) {
+        let fullUrl = CONFIG.siteUrl + playUrl;
+        let html = await request(fullUrl, CONFIG.siteUrl);
+        let iframeMatch = html.match(/src=["'](\/vod\/player\/[^"']+)["']/i);
+        if (!iframeMatch) throw new Error("未找到播放器");
+        let playerHtml = await request(CONFIG.siteUrl + iframeMatch[1], CONFIG.siteUrl);
+        let dataMatch = playerHtml.match(/var\s+player_aaaa\s*=\s*(\{[\s\S]*?\})\s*<\/script>/);
+        if (!dataMatch) throw new Error("无播放数据");
+        let playerData = JSON.parse(dataMatch[1]);
+        let videoUrl = playerData.url || "";
+        let from = playerData.from || "";
+        let encrypt = playerData.encrypt || 0;
+        if (encrypt === 1) videoUrl = unescape(videoUrl);
+        else if (encrypt === 2) videoUrl = unescape(atob(videoUrl));
+        if (!videoUrl) throw new Error("地址为空");
+        if (/youku|iqiyi|qq|mgtv|bilibili/i.test(videoUrl)) return { type: "sniff", url: fullUrl };
+        let prefix = PARSE_MAP[from] || "";
+        if (prefix) return { type: "parse", url: prefix + encodeURIComponent(videoUrl) };
+        return { type: "direct", url: videoUrl };
+    }
+    async function openDetail(item) {
+        state.currentVod = item;
+        state.detailData = null;
+        state.playData = null;
+        state.currentSource = 0;
+        state.currentEpisode = 0;
+        $("#detailOverlay").classList.add("active");
+        $("#detailPoster").src = resolveUrl(item.vod_pic);
+        $("#detailTitle").innerText = item.vod_name;
+        $("#detailDesc").innerText = "加载详情...";
+        $("#detailMeta").style.display = "none";
+        $("#detailCast").style.display = "none";
+        $("#sourceSection").style.display = "none";
+        $("#episodeSection").style.display = "none";
+        $("#playBtn").disabled = true;
+        $("#playBtn").className = "play-btn loading";
+        $("#parseLog").style.display = "none";
+        setStatus("");
+        let cleanName = item.vod_name.replace(/\(?\d{4}\)?$/, "").replace(/第\d+集$/, "").trim();
+        let [detailHtml, tmdbResults] = await Promise.all([
+            request(CONFIG.siteUrl + item.vod_id, CONFIG.siteUrl).catch(() => ""),
+            tmdbSearch(cleanName)
+        ]);
+        let detail = { vod_id: item.vod_id, vod_name: item.vod_name, vod_pic: item.vod_pic, vod_content: "", year: "", sources: [], episodes: [] };
+        if (detailHtml) detail = parseDetail(detailHtml, item.vod_id);
+        state.detailData = detail;
+        let tmdbMatch = tmdbResults[0];
+        if (tmdbMatch && tmdbMatch.poster) {
+            detail.vod_pic = tmdbMatch.poster;
+            $("#detailPoster").src = tmdbMatch.poster;
+        }
+        $("#detailTitle").innerText = detail.vod_name;
+        let metaDiv = $("#detailMeta");
+        metaDiv.innerHTML = "";
+        if (detail.year) metaDiv.appendChild(makeTag(detail.year));
+        if (tmdbMatch?.year) metaDiv.appendChild(makeTag(tmdbMatch.year));
+        if (tmdbMatch?.rating > 0) metaDiv.appendChild(makeRating(tmdbMatch.rating));
+        if (metaDiv.children.length) metaDiv.style.display = "flex";
+        $("#detailDesc").innerText = tmdbMatch?.overview || detail.vod_content || "暂无简介";
+        if (detail.sources.length) {
+            $("#sourceSection").style.display = "block";
+            renderSources(detail.sources);
+        }
+        if (detail.episodes.length) {
+            $("#episodeSection").style.display = "block";
+            renderEpisodes(detail.episodes);
+        }
+        let bestIdx = 0;
+        for (let i=0; i<detail.sources.length; i++) {
+            if (detail.sources[i].name.toLowerCase().includes("m3u8")) { bestIdx = i; break; }
+        }
+        state.currentSource = bestIdx;
+        let firstHref = detail.episodes[0]?.href || detail.sources[bestIdx]?.episodes?.[0]?.href || detail.sources[bestIdx]?.href || detail.sources[0]?.href;
+        if (firstHref) {
+            setStatus("解析播放地址...", "loading");
+            try {
+                let res = await parsePlayPage(firstHref);
+                state.playData = res;
+                $("#playBtn").innerText = "▶ 播放";
+                $("#playBtn").className = "play-btn success";
+                $("#playBtn").disabled = false;
+                $("#playBtn").onclick = () => playVideo();
+                setStatus("就绪", "success");
+                playVideo();
+            } catch(e) {
+                $("#playBtn").innerText = "重试";
+                $("#playBtn").className = "play-btn error";
+                $("#playBtn").disabled = false;
+                $("#playBtn").onclick = () => openDetail(item);
+                setStatus(e.message, "error");
+            }
+        } else {
+            $("#playBtn").innerText = "暂无播放源";
+            $("#playBtn").className = "play-btn error";
+        }
+    }
+    function makeTag(t) { let s = document.createElement("span"); s.className = "detail-meta-tag"; s.innerText = t; return s; }
+    function makeRating(r) { let s = document.createElement("span"); s.className = "detail-meta-rating"; s.innerText = "⭐ " + r.toFixed(1); return s; }
+    function renderSources(sources) {
+        let container = $("#sourceList");
+        container.innerHTML = "";
+        sources.forEach((src, idx) => {
+            let btn = document.createElement("div");
+            btn.className = "source-btn" + (idx === state.currentSource ? " active" : "");
+            btn.innerText = src.name;
+            btn.addEventListener("click", async () => {
+                if (idx === state.currentSource) return;
+                state.currentSource = idx;
+                state.currentEpisode = 0;
+                document.querySelectorAll(".source-btn").forEach(b => b.classList.remove("active"));
+                btn.classList.add("active");
+                let episodes = state.detailData.sources[idx]?.episodes || [];
+                renderEpisodes(episodes);
+                let firstEp = episodes[0];
+                if (firstEp) {
+                    setStatus("切换线路...", "loading");
+                    try {
+                        let res = await parsePlayPage(firstEp.href);
+                        state.playData = res;
+                        $("#playBtn").innerText = "▶ 播放";
+                        $("#playBtn").className = "play-btn success";
+                        $("#playBtn").disabled = false;
+                        $("#playBtn").onclick = () => playVideo();
+                        setStatus("就绪", "success");
+                        playVideo();
+                    } catch(e) { setStatus(e.message, "error"); }
+                }
+            });
+            container.appendChild(btn);
+        });
+    }
+    function renderEpisodes(episodes) {
+        let container = $("#episodeList");
+        container.innerHTML = "";
+        episodes.forEach((ep, idx) => {
+            let btn = document.createElement("div");
+            btn.className = "episode-btn" + (idx === state.currentEpisode ? " active" : "");
+            btn.innerText = ep.name;
+            btn.addEventListener("click", async () => {
+                if (idx === state.currentEpisode) return;
+                state.currentEpisode = idx;
+                document.querySelectorAll(".episode-btn").forEach(b => b.classList.remove("active"));
+                btn.classList.add("active");
+                setStatus("切换选集...", "loading");
+                try {
+                    let res = await parsePlayPage(ep.href);
+                    state.playData = res;
+                    $("#playBtn").innerText = "▶ 播放";
+                    $("#playBtn").className = "play-btn success";
+                    $("#playBtn").disabled = false;
+                    $("#playBtn").onclick = () => playVideo();
+                    setStatus("就绪", "success");
+                    playVideo();
+                } catch(e) { setStatus(e.message, "error"); }
+            });
+            container.appendChild(btn);
+        });
+    }
+    function playVideo() {
+        let d = state.playData;
+        if (!d) return;
+        if (window.fm && typeof window.fm.play === "function") {
+            window.fm.play(d.url, state.detailData?.vod_name || "视频", {});
+        } else {
+            window.open(d.url, "_blank");
+        }
+    }
+    function setStatus(msg, cls) {
+        let el = $("#parseStatus");
+        if (el) { el.innerText = msg; el.className = "parse-status " + (cls || ""); }
+    }
+    function closeDetail() { $("#detailOverlay").classList.remove("active"); }
+    async function doSearch(keyword) {
+        if (!keyword.trim()) return;
+        state.searchMode = true;
+        state.searchKeyword = keyword.trim();
+        state.searchPage = 1;
+        state.searchVodList = [];
+        state.searchHasMore = true;
+        $("#searchKeywordTitle").innerText = `搜索: ${keyword}`;
+        $("#searchOverlay").classList.add("active");
+        renderSearchList(false);
+        let tip = $("#searchListTip");
+        tip.innerHTML = '<div class="loading">搜索中...</div>';
+        try {
+            let [ajaxResp, tmdbRes] = await Promise.all([
+                request(`${CONFIG.siteUrl}/index.php/ajax/suggest?mid=1&wd=${encodeURIComponent(keyword)}&limit=20`, CONFIG.siteUrl).catch(() => null),
+                tmdbSearch(keyword)
+            ]);
+            let items = [];
+            if (ajaxResp) {
+                try {
+                    let data = JSON.parse(ajaxResp);
+                    if (data.code === 1 && data.list) {
+                        items = data.list.map(d => ({
+                            vod_id: `/vodhtml/${d.id}/`,
+                            vod_name: d.name,
+                            vod_pic: d.pic || "",
+                            vod_tag: "",
+                            vod_remarks: ""
+                        }));
+                    }
+                } catch(e) {}
+            }
+            if (items.length === 0) {
+                let html = await request(`${CONFIG.siteUrl}/vod-search/-------------.html?wd=${encodeURIComponent(keyword)}`, CONFIG.siteUrl);
+                items = parseVodList(html);
+            }
+            items = items.map(it => {
+                let match = tmdbRes.find(t => t.title.includes(it.vod_name) || it.vod_name.includes(t.title));
+                if (match) {
+                    return {
+                        ...it,
+                        tmdbPoster: match.poster,
+                        tmdbRating: match.rating,
+                        tmdbOverview: match.overview,
+                        tmdbYear: match.year,
+                        tmdbType: match.mediaType
+                    };
+                }
+                return it;
+            });
+            state.searchVodList = items;
+            state.searchHasMore = items.length > 20;
+            renderSearchList(false);
+        } catch(e) {
+            tip.innerHTML = '<div class="error-tip">搜索失败</div>';
+        }
+        state.loading = false;
+    }
+    function closeSearch() {
+        $("#searchOverlay").classList.remove("active");
+        state.searchMode = false;
+    }
+    function initScroll() {
+        let timer = null;
+        const onScroll = () => {
+            if (timer) return;
+            timer = setTimeout(() => {
+                timer = null;
+                const isSearch = state.searchMode && $("#searchOverlay").classList.contains("active");
+                const scrollElement = isSearch ? $("#searchOverlay") : window;
+                const scrollTop = isSearch ? scrollElement.scrollTop : (window.scrollY || document.documentElement.scrollTop);
+                const clientHeight = isSearch ? scrollElement.clientHeight : window.innerHeight;
+                const scrollHeight = isSearch ? scrollElement.scrollHeight : document.documentElement.scrollHeight;
+                if (scrollHeight - scrollTop - clientHeight < 400) {
+                    if (state.loading) return;
+                    if (isSearch) {
+                        if (!state.searchHasMore) return;
+                        state.loading = true;
+                        $("#searchListTip").innerHTML = '<div class="loading">加载更多...</div>';
+                        state.searchPage++;
+                        request(`${CONFIG.siteUrl}/index.php/ajax/suggest?mid=1&wd=${encodeURIComponent(state.searchKeyword)}&page=${state.searchPage}&limit=20`, CONFIG.siteUrl)
+                            .then(resp => {
+                                let addItems = [];
+                                try {
+                                    let data = JSON.parse(resp);
+                                    if (data.code === 1 && data.list) {
+                                        addItems = data.list.map(d => ({ vod_id: `/vodhtml/${d.id}/`, vod_name: d.name, vod_pic: d.pic || "", vod_tag: "", vod_remarks: "" }));
+                                    }
+                                } catch(e) {}
+                                if (addItems.length) {
+                                    state.searchVodList.push(...addItems);
+                                    state.searchHasMore = addItems.length >= 20;
+                                    renderSearchList(true, addItems);
+                                } else {
+                                    state.searchHasMore = false;
+                                    $("#searchListTip").innerHTML = '<div class="no-more">没有更多了</div>';
+                                }
+                            })
+                            .finally(() => { state.loading = false; });
+                    } else {
+                        if (!state.hasMore || !state.cat) return;
+                        state.loading = true;
+                        $("#listTip").innerHTML = '<div class="loading">加载更多...</div>';
+                        state.page++;
+                        let url = buildCategoryUrl(state.cat, state.page);
+                        request(url, CONFIG.siteUrl)
+                            .then(html => {
+                                let items = parseVodList(html);
+                                if (items.length) {
+                                    state.vodList.push(...items);
+                                    state.hasMore = items.length >= 18;
+                                    renderGridList(true, items);
+                                } else {
+                                    state.hasMore = false;
+                                    $("#listTip").innerHTML = '<div class="no-more">没有更多了</div>';
+                                }
+                            })
+                            .finally(() => { state.loading = false; });
+                    }
+                }
+            }, 100);
+        };
+        window.addEventListener("scroll", onScroll, { passive: true });
+        $("#searchOverlay")?.addEventListener("scroll", onScroll, { passive: true });
+    }
+    async function init() {
+        if (window.fongmiBridge || window.fm || window.fongmi) document.documentElement.classList.add("fm-native");
+        if (!window.fm) {
+            await new Promise(resolve => {
+                const handler = () => { if (window.fm) resolve(); else setTimeout(handler, 100); };
+                window.addEventListener("fmsdk", handler, { once: true });
+                setTimeout(resolve, 2000);
+            });
+        }
+        const carouselData = await fetchCarouselData();
+        if (carouselData.length > 0) {
+            buildCarousel(carouselData);
+            initCarouselTouch();
+            const prevBtn = document.getElementById('carouselPrev');
+            const nextBtn = document.getElementById('carouselNext');
+            if (prevBtn) prevBtn.addEventListener('click', () => prevSlide());
+            if (nextBtn) nextBtn.addEventListener('click', () => nextSlide());
+        } else {
+            document.getElementById('carouselWrapper').style.display = 'none';
+        }
+        const bar = $("#categoryBar");
+        if (bar) {
+            let html = "";
+            for (let c of CONFIG.categories) {
+                html += `<div class="category-item${c.id === state.cat ? " active" : ""}" data-id="${c.id}">${c.name}</div>`;
+            }
+            bar.innerHTML = html;
+            bar.querySelectorAll(".category-item").forEach(el => {
+                el.addEventListener("click", () => {
+                    let id = el.dataset.id;
+                    if (id === state.cat && state.vodList.length) return;
+                    bar.querySelectorAll(".category-item").forEach(e => e.classList.remove("active"));
+                    el.classList.add("active");
+                    state.searchMode = false;
+                    closeSearch();
+                    state.cat = id;
+                    state.page = 1;
+                    state.vodList = [];
+                    state.hasMore = !!id;
+                    loadPage();
+                });
+            });
+        }
+        $("#wormhole-icon")?.addEventListener("click", () => doSearch($("#searchInput")?.value));
+        $("#searchInput")?.addEventListener("keypress", e => { if (e.key === "Enter") doSearch(e.target.value); });
+        $("#detailClose")?.addEventListener("click", closeDetail);
+        $("#detailOverlay")?.addEventListener("click", e => { if (e.target === e.currentTarget) closeDetail(); });
+        $("#searchCloseBtn")?.addEventListener("click", closeSearch);
+        initScroll();
+        await loadPage();
+    }
+    init().catch(console.error);
+})();</script>
+<button class="back-to-top" id="backToTop" title="回到顶部">↑</button>
+<script>(function(){
+    const btn = document.getElementById('backToTop');
+    let ticking = false;
+    window.addEventListener('scroll', function() {
+        if (!ticking) {
+            requestAnimationFrame(function() {
+                btn.classList.toggle('show', window.scrollY > 600);
+                ticking = false;
+            });
+            ticking = true;
+        }
+    }, { passive: true });
+    btn.addEventListener('click', function() {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+})();</script>
+</body></html>
