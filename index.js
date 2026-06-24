@@ -154,7 +154,7 @@ var io=new IntersectionObserver(function(es){if(es[0].isIntersecting)load()},{ro
 }
 
 // ==================== TMDB 详情页模板 ====================
-function tmdbPageHtml(d, vodUrl, PROF, IMG) {
+function tmdbPageHtml(d, vodUrl, PROF, IMG, isFallback) {
   const gTags = d.genres.map(g => `<span class=tag>${esc(g)}</span>`).join('');
   const rt = d.rating > 0 ? `<span class=rtag>⭐ ${d.rating.toFixed(1)}</span>` : '';
   const yr = d.year ? `<span class=tag>${d.year}</span>` : '';
@@ -222,6 +222,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;backgrou
 </div>
 </div>
 <button class=play onclick="window.parent.postMessage({type:'ayfPlay',url:'${vodUrl.replace(/'/g, "\\'")}'},'*')">▶ 播  放</button>
+${isFallback ? '<div style="text-align:center;padding:12px 16px;color:rgba(255,255,255,.45);font-size:12px">TMDB 未匹配到该影片信息，仅显示网站数据</div>' : ''}
 <div class=sec>
 <div class=sh>剧情简介</div>
 <div class="desc collapsed" id=desc>${esc(d.overview) || '暂无简介'}</div>
@@ -353,11 +354,23 @@ const server = http.createServer((req, res) => {
     if (u.pathname === '/tmdb-page') {
       const title = u.searchParams.get('title') || '';
       const vodUrl = u.searchParams.get('url') || '';
+      const siteImg = u.searchParams.get('img') || '';
       if (!title) return send(res, 400, 'missing title');
       const cleanName = title.replace(/\(?\d{4}\)?$/, '').replace(/第\d+集$/, '').trim();
       const IMG = 'https://images.tmdb.org/t/p/w500';
       const IMG_LG = 'https://images.tmdb.org/t/p/w1280';
       const PROF = 'https://image.tmdb.org/t/p/w185';
+
+      // 没有匹配到 TMDB 时，用网站图片生成页面
+      function fallbackPage() {
+        const bgImg = siteImg ? siteImg : '';
+        const d = {
+          title: title, orig: '', poster: siteImg, backdrop: siteImg,
+          rating: 0, year: '', runtime: 0, genres: [], overview: '',
+          status: '', seasons: 0, eps: 0, cast: [], similar: []
+        };
+        send(res, 200, tmdbPageHtml(d, vodUrl, PROF, IMG, true), 'text/html; charset=utf-8');
+      }
 
       function tmdbSearch(kw, cb) {
         fetchText(`${TMDB_BASE}/search/multi?api_key=${TMDB_KEY}&language=zh-CN&query=${encodeURIComponent(kw)}&include_adult=false&page=1`, (e, json) => {
@@ -381,14 +394,14 @@ const server = http.createServer((req, res) => {
       }
 
       return tmdbSearch(cleanName, (err, match) => {
-        if (err || !match) { res.writeHead(302, { 'Location': vodUrl || AYF }); return res.end(); }
+        if (err || !match) return fallbackPage();
         tmdbDetail(match.id, match.media_type, (err2, detail) => {
-          if (err2 || !detail) { res.writeHead(302, { 'Location': vodUrl || AYF }); return res.end(); }
+          if (err2 || !detail) return fallbackPage();
           const d = {
             title: detail.title || detail.name || title,
             orig: detail.original_title || detail.original_name || '',
-            poster: detail.poster_path ? IMG + detail.poster_path : '',
-            backdrop: detail.backdrop_path ? IMG_LG + detail.backdrop_path : '',
+            poster: detail.poster_path ? IMG + detail.poster_path : (siteImg || ''),
+            backdrop: detail.backdrop_path ? IMG_LG + detail.backdrop_path : (siteImg || ''),
             rating: detail.vote_average || 0,
             year: (detail.release_date || detail.first_air_date || '').substring(0, 4),
             runtime: detail.runtime || (detail.episode_run_time && detail.episode_run_time[0]) || 0,
@@ -407,7 +420,7 @@ const server = http.createServer((req, res) => {
               rating: s.vote_average ? s.vote_average.toFixed(1) : ''
             }))
           };
-          send(res, 200, tmdbPageHtml(d, vodUrl, PROF, IMG), 'text/html; charset=utf-8');
+          send(res, 200, tmdbPageHtml(d, vodUrl, PROF, IMG, false), 'text/html; charset=utf-8');
         });
       });
     }
