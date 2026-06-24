@@ -123,7 +123,7 @@ function categoryHtml(cid, name) {
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:linear-gradient(135deg,#1e90ff,#ff6347);color:#fff;min-height:100vh}.wrap{padding:14px}.title{font-size:18px;font-weight:700;margin:4px 0 14px}.gr{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.card{background:rgba(22,22,40,.58);border-radius:10px;overflow:hidden;border:1px solid rgba(255,255,255,.1)}.poster{position:relative;background:#161628}.poster img{width:100%;aspect-ratio:3/4;object-fit:cover;display:block}.badge{position:absolute;right:5px;top:5px;max-width:85%;padding:2px 6px;border-radius:6px;background:linear-gradient(90deg,rgba(255,193,7,.95),rgba(255,152,0,.92));font-size:10px;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:0 1px 2px #000}.ptext{position:absolute;right:6px;bottom:6px;left:6px;text-align:right;font-size:12px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:0 1px 3px #000,0 0 6px rgba(0,0,0,.75)}.info{padding:6px 4px;text-align:center}.name{font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.desc{font-size:10px;color:#ffd966;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.tip{text-align:center;padding:18px;color:rgba(255,255,255,.82);font-size:13px}@media(min-width:600px){.gr{grid-template-columns:repeat(4,1fr)}}@media(min-width:900px){.gr{grid-template-columns:repeat(5,1fr)}}
 </style></head><body>
-<div class="wrap"><div class="title" id="title">${esc(name)}（0部）</div><div class="gr" id="grid"></div><div class="tip" id="tip">准备加载...</div></div>
+<div class="wrap"><div class="gr" id="grid"></div><div class="tip" id="tip">准备加载...</div></div>
 <script>
 var cid=${JSON.stringify(cid)},page=0,loading=false,finished=false,count=0;
 function el(s){return document.querySelector(s)}
@@ -381,6 +381,7 @@ const server = http.createServer((req, res) => {
             title: w.title || w.name || '',
             poster: w.poster_path ? PP_IMG + w.poster_path : '',
             rating: w.vote_average ? w.vote_average.toFixed(1) : '',
+            character: w.character || '',
             media_type: w.media_type
           })));
 
@@ -407,6 +408,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;backgrou
 .pwi img{width:100%;aspect-ratio:2/3;object-fit:cover;display:block;background:#161628}
 .pwi .pwt{padding:4px 6px;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:rgba(224,224,224,.9)}
 .pwi .pwr{padding:0 6px 6px;font-size:10px;color:#ffc107}
+.pwi .pwc{padding:0 6px 6px;font-size:10px;color:rgba(224,224,224,.6);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tip{text-align:center;padding:16px;color:rgba(255,255,255,.5);font-size:13px}
 </style></head><body>
 <div class=topbar><button class=nbtn onclick="history.back()">‹</button><div style="font-size:16px;font-weight:700">${esc(name)}</div></div>
@@ -424,7 +426,8 @@ function addWork(w){
   var d=document.createElement('div');d.className='pwi';
   var img=w.poster?'<img src="'+w.poster+'" loading=lazy>':'<div style="width:100%;aspect-ratio:2/3;background:#222"></div>';
   var safeT=w.title.replace(/'/g,"\\'");
-  d.innerHTML=img+'<div class=pwt>'+w.title+'</div>'+(w.rating?'<div class=pwr>⭐ '+w.rating+'</div>':'');
+  var chHtml=w.character?'<div class=pwc>饰 '+w.character+'</div>':'';
+  d.innerHTML=img+'<div class=pwt>'+w.title+'</div>'+(w.rating?'<div class=pwr>⭐ '+w.rating+'</div>':'')+chHtml;
   d.onclick=function(){window.parent.postMessage({type:'ayfSearch',query:safeT},'*')};
   el('#works').appendChild(d);
 }
