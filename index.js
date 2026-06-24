@@ -82,6 +82,7 @@ function pickClassTexts(html, cls) {
 function cleanText(s) { return strip(String(s || '').replace(/&nbsp;/g, ' ').replace(/&amp;nbsp;/g, ' ')); }
 function isGoodMeta(t) { t = cleanText(t); return t && t.length <= 24 && !/[，。！？；：]/.test(t) && (t.match(/\//g) || []).length <= 2; }
 function uniq(arr) { return arr.filter(Boolean).filter((v, i, a) => a.indexOf(v) === i); }
+function urlFix(img) { return img && img.startsWith('http') ? img : (img ? AYF + img : ''); }
 function inferStatus(raw) { raw = cleanText(raw); const m = raw.match(/(更新至\d+集|全\d+集|第\d+集|正片|高清版|剧集|豆瓣高分)/); return m ? m[1] : ''; }
 function inferMeta(raw, title, score) {
   raw = cleanText(raw).replace(cleanText(title), '').replace(score || '', ' ');
@@ -280,6 +281,33 @@ const server = http.createServer((req, res) => {
   try {
     const u = new URL(req.url, `http://127.0.0.1:${PORT}`);
     if (u.pathname === '/health') return send(res, 200, 'ok');
+    if (u.pathname === '/home-api') {
+      return fetchText(AYF + '/', (err, html) => {
+        if (err) return send(res, 500, JSON.stringify({ok:false,error:err.message}), 'application/json; charset=utf-8');
+        try {
+          const banners = []; const bReg = /<li\b[^>]*class="[^"]*hl-br-item[^"]*"[^>]*>[\s\S]*?<\/li>/gi;
+          let bm; while ((bm = bReg.exec(html))) {
+            const li = bm[0]; const a = (li.match(/<a\b[\s\S]*?>/i)||[''])[0];
+            const href = attr(a,'href'); const title = attr(a,'title')||strip(a);
+            const imgTag = (li.match(/<img\b[\s\S]*?>/i)||[''])[0];
+            const img = attr(a,'data-original')||attr(imgTag,'data-original')||attr(imgTag,'src');
+            const type = cleanText(pickText(li,'hl-br-type'));
+            const sub = cleanText(pickText(li,'hl-br-sub')).replace(/[\r\n]+/g,'').trim().substring(0,29);
+            if (href && title) banners.push({title,img:urlFix(img),url:href,type,desc:sub});
+            if (banners.length >= 6) break;
+          }
+          const sections = []; const sReg = /<div\b[^>]*class="[^"]*hl-row-box[^"]*"[^>]*>[\s\S]*?<\/div>\s*<\/div>/gi;
+          let sm; while ((sm = sReg.exec(html))) {
+            const block = sm[0]; const h2 = (block.match(/<h2[^>]*>([\s\S]*?)<\/h2>/i)||['',''])[1];
+            const name = strip(h2); if (!name) continue;
+            const items = parseCards(block);
+            if (items.length > 0) sections.push({name,items:items.slice(0,12)});
+            if (sections.length >= 7) break;
+          }
+          send(res, 200, JSON.stringify({ok:true,lunbos:banners,sections}), 'application/json; charset=utf-8');
+        } catch(e) { send(res, 500, JSON.stringify({ok:false,error:e.message}), 'application/json; charset=utf-8'); }
+      });
+    }
     if (u.pathname === '/category') {
       return send(res, 200, categoryHtml(u.searchParams.get('cid') || '1', u.searchParams.get('name') || '电影'), 'text/html; charset=utf-8');
     }
