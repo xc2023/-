@@ -173,8 +173,8 @@ function tmdbPageHtml(d, vodUrl, PROF, IMG) {
 html,body{height:100%;overflow-x:hidden}
 body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#0a0e1a;color:#eee}
 .bg{position:fixed;top:0;left:0;right:0;height:56vh;overflow:hidden;z-index:0;background:#0a0e1a}
-.bg img{width:100%;height:100%;object-fit:cover;object-position:center 20%;filter:brightness(.5)}
-.bg .fade{position:absolute;bottom:0;left:0;right:0;height:50%;background:linear-gradient(to top,#0a0e1a 0%,rgba(10,14,26,.85) 30%,transparent 100%)}
+.bg img{width:100%;height:100%;object-fit:cover;object-position:center 20%;filter:brightness(.75)}
+.bg .fade{position:absolute;bottom:0;left:0;right:0;height:40%;background:linear-gradient(to top,#0a0e1a 0%,rgba(10,14,26,.7) 40%,transparent 100%)}
 .topbar{position:fixed;top:0;left:0;right:0;z-index:20;padding:10px 14px;padding-top:max(10px,env(safe-area-inset-top));display:flex;align-items:center}
 .nbtn{background:rgba(0,0,0,.4);backdrop-filter:blur(8px);border:0;color:#fff;width:36px;height:36px;border-radius:50%;cursor:pointer;font-size:22px;display:flex;align-items:center;justify-content:center}
 .content{position:relative;z-index:10;padding-top:max(38vh,env(safe-area-inset-top));padding-bottom:env(safe-area-inset-bottom)}
