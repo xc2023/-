@@ -285,6 +285,7 @@ const server = http.createServer((req, res) => {
       return fetchText(AYF + '/', (err, html) => {
         if (err) return send(res, 500, JSON.stringify({ok:false,error:err.message}), 'application/json; charset=utf-8');
         try {
+          // 提取轮播
           const banners = []; const bReg = /<li\b[^>]*class="[^"]*hl-br-item[^"]*"[^>]*>[\s\S]*?<\/li>/gi;
           let bm; while ((bm = bReg.exec(html))) {
             const li = bm[0]; const a = (li.match(/<a\b[\s\S]*?>/i)||[''])[0];
@@ -296,16 +297,22 @@ const server = http.createServer((req, res) => {
             if (href && title) banners.push({title,img:urlFix(img),url:href,type,desc:sub});
             if (banners.length >= 6) break;
           }
-          const sections = []; const sReg = /<div\b[^>]*class="[^"]*hl-row-box[^"]*"[^>]*>[\s\S]*?<\/div>\s*<\/div>/gi;
-          let sm; while ((sm = sReg.exec(html))) {
-            const block = sm[0]; const h2 = (block.match(/<h2[^>]*>([\s\S]*?)<\/h2>/i)||['',''])[1];
-            const name = strip(h2); if (!name) continue;
+          // 提取板块：按 h2 标题分割
+          const sections = [];
+          const h2Reg = /<h2[^>]*>([\s\S]*?)<\/h2>/gi;
+          let h2m;
+          while ((h2m = h2Reg.exec(html))) {
+            const name = strip(h2m[1]); if (!name) continue;
+            // 从 h2 之后到下一个 h2 之间提取卡片
+            const afterH2 = html.substring(h2m.index + h2m[0].length);
+            const nextH2 = afterH2.search(/<h2[^>]*>/i);
+            const block = nextH2 > -1 ? afterH2.substring(0, nextH2) : afterH2;
             const items = parseCards(block);
-            if (items.length > 0) sections.push({name,items:items.slice(0,12)});
+            if (items.length > 0) sections.push({name, items: items.slice(0, 12)});
             if (sections.length >= 7) break;
           }
-          send(res, 200, JSON.stringify({ok:true,lunbos:banners,sections}), 'application/json; charset=utf-8');
-        } catch(e) { send(res, 500, JSON.stringify({ok:false,error:e.message}), 'application/json; charset=utf-8'); }
+          send(res, 200, JSON.stringify({ok:true, lunbos: banners, sections}), 'application/json; charset=utf-8');
+        } catch(e) { send(res, 500, JSON.stringify({ok:false, error: e.message, stack: e.stack}), 'application/json; charset=utf-8'); }
       });
     }
     if (u.pathname === '/category') {
