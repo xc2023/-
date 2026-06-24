@@ -187,6 +187,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;backgrou
 .rtag{padding:3px 10px;border-radius:14px;font-size:12px;font-weight:700;background:rgba(255,193,7,.15);color:#ffc107;border:1px solid rgba(255,193,7,.3)}
 .play{display:block;margin:18px auto 0;width:calc(100% - 32px);max-width:400px;padding:14px;background:rgba(255,255,255,.15);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.25);border-radius:24px;color:#fff;font-size:17px;font-weight:700;cursor:pointer;letter-spacing:1px}
 .play:active{transform:scale(.97);background:rgba(255,255,255,.25)}
+.back-btn{position:fixed;bottom:30px;right:16px;width:44px;height:44px;border-radius:50%;background:rgba(79,195,247,.35);color:#fff;font-size:24px;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:100;border:1px solid rgba(79,195,247,.3);backdrop-filter:blur(6px);-webkit-tap-highlight-color:transparent}
+.back-btn:active{background:rgba(79,195,247,.6)}
 .sec{padding:20px 16px 0}
 .sh{font-size:15px;font-weight:700;color:#fff;margin-bottom:10px}
 .desc{font-size:13px;color:rgba(224,224,224,.78);line-height:1.7}
@@ -270,7 +272,7 @@ function _rP(box,data,name){
   box.innerHTML='<div class=pname>'+name+'</div><div class=pbio>'+bio+'</div>'+(wh?'<div class=pworks>'+wh+'</div>':'');
 }
 
-
+<button class=back-btn onclick="window.parent.postMessage({type:'ayfClose'},'*')">‹</button>
 </script>
 </body></html>`;
 }
@@ -410,8 +412,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;backgrou
 .pwi .pwr{padding:0 6px 6px;font-size:10px;color:#ffc107}
 .pwi .pwc{padding:0 6px 6px;font-size:10px;color:rgba(224,224,224,.6);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tip{text-align:center;padding:16px;color:rgba(255,255,255,.5);font-size:13px}
+.back-btn{position:fixed;bottom:30px;right:16px;width:44px;height:44px;border-radius:50%;background:rgba(79,195,247,.35);color:#fff;font-size:24px;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:100;border:1px solid rgba(79,195,247,.3);backdrop-filter:blur(6px);-webkit-tap-highlight-color:transparent}
+.back-btn:active{background:rgba(79,195,247,.6)}
 </style></head><body>
 <div class=topbar><button class=nbtn onclick="history.back()">‹</button><div style="font-size:16px;font-weight:700">${esc(name)}</div></div>
+<button class=back-btn onclick="history.back()">‹</button>
 <div class=wrap>
 ${photo ? '<div class=photo><img src="'+photo+'"><div class=pinfo><div class=nm>'+esc(name)+'</div>'+infoHtml+'</div></div>' : '<div class=nm>'+esc(name)+'</div>'+infoHtml}
 <div class=bio>${esc(bio)}</div>
