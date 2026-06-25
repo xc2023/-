@@ -244,8 +244,9 @@ io.observe(el('#tip'));load();
 }
 
 // ========== TMDB详情页HTML ==========
-function tmdbPageHtml(d, vodUrl) {
+function tmdbPageHtml(d, vodUrl, fallbackImg) {
   const fullUrl = vodUrl && !/^https?:/.test(vodUrl) ? 'https://www.1905dsj.com' + vodUrl : vodUrl;
+  const bgImg = d.backdrop || fallbackImg || '';
   const gTags = d.genres.map(g=>`<span class=tag>${esc(g)}</span>`).join('');
   const rt = d.rating>0?`<span class=rtag>⭐ ${d.rating.toFixed(1)}</span>`:'';
   const yr = d.year?`<span class=tag>${d.year}</span>`:'';
@@ -258,7 +259,7 @@ function tmdbPageHtml(d, vodUrl) {
   return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>${esc(d.title)}</title>
 <style>
-*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}body{font-family:-apple-system,sans-serif;background:#0a0e1a;color:#eee}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}body{font-family:-apple-system,sans-serif;background:rgba(10,14,26,.85);color:#eee}
 .bg{position:fixed;top:0;left:0;right:0;height:56vh;overflow:hidden;z-index:0;background:#0a0e1a}.bg img{width:100%;height:100%;object-fit:cover;object-position:center 20%;filter:brightness(.85)}.bg .fade{position:absolute;bottom:0;left:0;right:0;height:35%;background:linear-gradient(to top,#0a0e1a 0%,rgba(10,14,26,.6) 50%,transparent 100%)}
 .topbar{position:fixed;top:0;left:0;right:0;z-index:20;padding:10px 14px;display:flex;align-items:center}
 .nbtn{background:rgba(0,0,0,.4);backdrop-filter:blur(8px);border:0;color:#fff;width:36px;height:36px;border-radius:50%;cursor:pointer;font-size:22px;display:flex;align-items:center;justify-content:center}
@@ -269,15 +270,19 @@ function tmdbPageHtml(d, vodUrl) {
 .tag{padding:3px 10px;border-radius:14px;font-size:11px;background:rgba(79,195,247,.15);color:#4fc3f7;border:1px solid rgba(79,195,247,.3)}.rtag{padding:3px 10px;border-radius:14px;font-size:12px;font-weight:700;background:rgba(255,193,7,.15);color:#ffc107;border:1px solid rgba(255,193,7,.3)}
 .play{display:block;margin:18px auto 0;width:calc(100% - 32px);max-width:400px;padding:14px;background:rgba(255,255,255,.15);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.25);border-radius:24px;color:#fff;font-size:17px;font-weight:700;cursor:pointer}.play:active{transform:scale(.97)}
 .sec{padding:20px 16px 0}.sh{font-size:15px;font-weight:700;margin-bottom:10px}
+.desc{font-size:13px;color:rgba(224,224,224,.78);line-height:1.7}
+.desc.collapsed{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.desc.expanded{display:block}
+.ebtn{background:0;border:0;color:#4fc3f7;font-size:12px;cursor:pointer;padding:4px 0}
 .clist{display:flex;gap:14px;overflow-x:auto;padding-bottom:8px}.clist::-webkit-scrollbar{display:none}
 .cast{flex-shrink:0;width:72px;text-align:center;cursor:pointer;text-decoration:none;color:#eee}.cimg{width:62px;height:62px;border-radius:50%;object-fit:cover;background:#222;display:block;margin:0 auto 6px;border:2px solid rgba(255,255,255,.2)}
 .cname{font-size:10px;color:rgba(224,224,224,.85);overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font-weight:600}
 </style></head><body>
-<div class=bg>${d.backdrop?'<img src="'+d.backdrop+'">':''}<div class=fade></div></div>
+<div class=bg>${bgImg?'<img src="'+bgImg+'">':''}<div class=fade></div></div>
 <div class=topbar><button class=nbtn onclick="try{parent.postMessage({type:'dsjClose'},'*')}catch(e){history.back()}">←</button></div>
 <div class=content><div class=hero><div class=info><div class=t>${esc(d.title)}</div><div class=sub>${esc(d.originalTitle)}</div><div class=tags>${yr}${rm}${ss}${gTags}${rt}</div></div></div>
 <button class=play onclick="try{parent.postMessage({type:'dsjPlay',url:'${fullUrl.replace(/'/g, "\\'")}'},'*')}catch(e){window.open('${fullUrl.replace(/'/g, "\\'")}','_blank')}">▶ 进入播放</button>
-${d.overview?'<div class=sec><div class=sh style="display:flex;align-items:center;justify-content:space-between">简介<button id="togBtn" onclick="var b=this.nextElementSibling;var t=this.textContent;if(b.style.maxHeight&&b.style.maxHeight!==\'none\'){b.style.maxHeight=\'none\';t=\'收起 \u25b2\'}else{b.style.maxHeight=\'4.2em\';t=\'展开 \u25bc\'}this.textContent=t" style="background:none;border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.6);font-size:11px;padding:2px 10px;border-radius:12px;cursor:pointer">展开 \u25bc</button></div><div id="overviewBox" style="font-size:13px;color:rgba(224,224,224,.78);line-height:1.7;max-height:4.2em;overflow:hidden;transition:max-height .3s">'+esc(d.overview)+'</div></div>':''}
+${d.overview?'<div class=sec><div class=sh>剧情简介</div><div class="desc collapsed" id=desc>${esc(d.overview)}</div>'+(d.overview.length>80?'<button class=ebtn onclick="var e=document.getElementById(\'desc\');e.classList.toggle(\'collapsed\');e.classList.toggle(\'expanded\');this.textContent=e.classList.contains(\'collapsed\')?\'展开全文\':\'收起\'">展开全文</button>':'')+'</div>':''}
 ${castHtml?'<div class=sec><div class=sh>主演</div><div class=clist>'+castHtml+'</div></div>':''}
 </div><button class=fbtn onclick="try{parent.postMessage({type:'dsjClose'},'*')}catch(e){history.back()}">\u2190</button></body></html>`;
 }
@@ -367,15 +372,18 @@ const server = http.createServer((req, res) => {
               d.year = (det.release_date||det.first_air_date||'').substring(0,4);
               d.runtime = det.runtime||(det.episode_run_time&&det.episode_run_time[0])||0;
               d.genres = (det.genres||[]).map(g=>g.name);
-              d.cast = (det.credits?.cast||[]).slice(0,20).map(c=>({id:c.id,name:c.name,pic:c.profile_path?`https://image.tmdb.org/t/p/w185${c.profile_path}`:''}));
+              d.cast = (det.credits?.cast||[]).slice(0,30).map(c=>({id:c.id,name:c.name,pic:c.profile_path?`https://image.tmdb.org/t/p/w185${c.profile_path}`:''}));
               d.backdrop = det.backdrop_path?`https://image.tmdb.org/t/p/w780${det.backdrop_path}`:'';
               if(mt==='tv'){d.seasons=det.number_of_seasons||0;d.eps=det.number_of_episodes||0;}
             } catch(e){}
-            send(res, 200, tmdbPageHtml(d, vodUrl), 'text/html; charset=utf-8');
+            send(res, 200, tmdbPageHtml(d, vodUrl, img), 'text/html; charset=utf-8');
           });
         }
       } catch(e){}
-      send(res, 200, tmdbPageHtml(d, vodUrl), 'text/html; charset=utf-8');
+      if (!d.overview && !d.cast.length) {
+        d.overview = '未在 TMDB 匹配到该影片信息，以下为网站数据。';
+      }
+      send(res, 200, tmdbPageHtml(d, vodUrl, img), 'text/html; charset=utf-8');
     });
   }
 
@@ -410,7 +418,7 @@ const server = http.createServer((req, res) => {
           knownFor ? '<div class=info-row><span class=info-label>职业</span><span class=info-val>' + esc(knownFor) + '</span></div>' : '',
           aka.length ? '<div class=info-row><span class=info-label>别名</span><span class=info-val>' + aka.map(a => esc(a)).join(' / ') + '</span></div>' : ''
         ].filter(Boolean).join('');
-        const worksJson = JSON.stringify(allWorks.slice(0, 30).map(w => ({
+        const worksJson = JSON.stringify(allWorks.map(w => ({
           title: w.title || w.name || '',
           poster: w.poster_path ? IMG + w.poster_path : '',
           rating: w.vote_average ? w.vote_average.toFixed(1) : '',
@@ -420,7 +428,7 @@ const server = http.createServer((req, res) => {
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 html,body{min-height:100vh;overflow-x:hidden}
-body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:rgba(10,14,26,.92);color:#eee}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:rgba(10,14,26,.85);color:#eee}
 .topbar{position:sticky;top:0;z-index:10;padding:10px 14px;background:rgba(15,20,40,.88);backdrop-filter:blur(10px);display:flex;align-items:center;gap:10px}
 .nbtn{background:rgba(255,255,255,.15);border:0;color:#fff;width:36px;height:36px;border-radius:50%;cursor:pointer;font-size:22px;display:flex;align-items:center;justify-content:center}
 .wrap{max-width:600px;margin:0 auto;padding:16px}
