@@ -187,10 +187,37 @@ function searchHtml(wd) {
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 body{font-family:-apple-system,sans-serif;background:#0a0e1a;color:#e0e0e0;min-height:100vh}
-.top{position:sticky;top:0;z-index:5;padding:10px 12px;background:linear-gradient(135deg,#0a0e27,#1a1f4e);backdrop-filter:blur(10px);display:flex;align-items:center;gap:8px;box-shadow:0 2px 12px rgba(0,0,0,0.4)}
-.inp{flex:1;border:0;border-radius:18px;padding:9px 12px;background:rgba(255,255,255,.12);color:#fff;outline:0;font-size:14px}
-.inp::placeholder{color:rgba(255,255,255,.55)}
-.sbtn{border:0;border-radius:18px;padding:8px 14px;background:#4fc3f7;color:#fff;font-weight:700;font-size:14px}
+.top{position:sticky;top:0;z-index:5;height:52px;padding:0 12px;background:linear-gradient(135deg,#0a0e27,#1a1f4e);backdrop-filter:blur(10px);display:flex;align-items:center;gap:0;box-shadow:0 2px 12px rgba(0,0,0,0.4)}
+.header-search{position:relative;display:flex;align-items:center;flex:1;min-width:0}
+.galaxy{height:50px;width:400px;background-image:radial-gradient(#ffffff 1px,transparent 1px),radial-gradient(#ffffff 1px,transparent 1px);background-size:50px 50px;background-position:0 0,25px 25px;position:absolute;z-index:-1;animation:twinkle 5s infinite;left:50%;transform:translateX(-50%)}@keyframes twinkle{0%,100%{opacity:.5}50%{opacity:1}}
+.stardust,.cosmic-ring,.starfield,.nebula{max-height:44px;max-width:400px;height:100%;width:100%;position:absolute;overflow:hidden;z-index:-1;border-radius:10px;filter:blur(3px)}
+.search-container{display:flex;align-items:center;justify-content:center;width:100%}
+.cosmic-input{background-color:#fff;border:none;width:100%;height:36px;border-radius:8px;color:#a9c7ff;padding-inline:42px;font-size:13px}
+.cosmic-input::placeholder{color:#6e8cff}
+.cosmic-input:focus{outline:none}#cosmic-main:focus-within>#input-mask{display:none}
+#input-mask{pointer-events:none;width:80px;height:100%;position:absolute;background:linear-gradient(90deg,transparent 0%,rgba(0,0,0,.1) 30%,#05071b 100%);top:0;right:0;left:auto;border-radius:0 8px 8px 0}
+#cosmic-glow{pointer-events:none;width:20px;height:14px;position:absolute;background:#4d6dff;top:6px;left:4px;filter:blur(16px);opacity:.8;transition:all 2s}
+#cosmic-main:hover>#cosmic-glow{opacity:0}
+.stardust{max-height:40px;max-width:390px;border-radius:8px;filter:blur(2px)}
+.stardust::before{content:"";z-index:-2;text-align:center;top:50%;left:50%;transform:translate(-50%,-50%) rotate(83deg);position:absolute;width:600px;height:600px;background-repeat:no-repeat;background-position:0 0;filter:brightness(1.4);background-image:conic-gradient(rgba(0,0,0,0) 0%,#4d6dff,rgba(0,0,0,0) 8%,rgba(0,0,0,0) 50%,#6e8cff,rgba(0,0,0,0) 58%);transition:all 2s}
+.cosmic-ring{max-height:38px;max-width:386px;border-radius:9px;filter:blur(.5px)}
+.cosmic-ring::before{content:"";z-index:-2;text-align:center;top:50%;left:50%;transform:translate(-50%,-50%) rotate(70deg);position:absolute;width:600px;height:600px;background-repeat:no-repeat;background-position:0 0;filter:brightness(1.3);background-image:conic-gradient(#7f7e8a,#4d6dff 5%,#7f7e8a 14%,#7f7e8a 50%,#6e8cff 60%,#7f7e8a 64%);transition:all 2s}
+.starfield{max-height:42px;max-width:398px}
+.starfield::before{content:"";z-index:-2;text-align:center;top:50%;left:50%;transform:translate(-50%,-50%) rotate(82deg);position:absolute;width:600px;height:600px;background-repeat:no-repeat;background-position:0 0;background-image:conic-gradient(rgba(0,0,0,0),#1c2452,rgba(0,0,0,0) 10%,rgba(0,0,0,0) 50%,#2a3875,rgba(0,0,0,0) 60%);transition:all 2s}
+.search-container:hover>.starfield::before{transform:translate(-50%,-50%) rotate(-98deg)}
+.search-container:hover>.nebula::before{transform:translate(-50%,-50%) rotate(-120deg)}
+.search-container:hover>.stardust::before{transform:translate(-50%,-50%) rotate(-97deg)}
+.search-container:hover>.cosmic-ring::before{transform:translate(-50%,-50%) rotate(-110deg)}
+.search-container:focus-within>.starfield::before{transform:translate(-50%,-50%) rotate(442deg);transition:all 4s}
+.search-container:focus-within>.nebula::before{transform:translate(-50%,-50%) rotate(420deg);transition:all 4s}
+.search-container:focus-within>.stardust::before{transform:translate(-50%,-50%) rotate(443deg);transition:all 4s}
+.search-container:focus-within>.cosmic-ring::before{transform:translate(-50%,-50%) rotate(430deg);transition:all 4s}
+.nebula{overflow:hidden;filter:blur(30px);opacity:.4;max-height:80px;max-width:440px}
+.nebula:before{content:"";z-index:-2;text-align:center;top:50%;left:50%;transform:translate(-50%,-50%) rotate(60deg);position:absolute;width:999px;height:999px;background-repeat:no-repeat;background-position:0 0;background-image:conic-gradient(#000,#4d6dff 5%,#000 38%,#000 50%,#6e8cff 60%,#000 87%);transition:all 2s}
+#wormhole-icon{position:absolute;top:5px;right:5px;display:flex;align-items:center;justify-content:center;z-index:2;max-height:28px;max-width:28px;height:100%;width:100%;isolation:isolate;overflow:hidden;border-radius:8px;background:linear-gradient(180deg,#1c2452,#05071b,#2a3875);border:1px solid transparent}
+.wormhole-border{height:30px;width:30px;position:absolute;overflow:hidden;top:4px;right:4px;border-radius:8px}
+.wormhole-border::before{content:"";text-align:center;top:50%;left:50%;transform:translate(-50%,-50%) rotate(90deg);position:absolute;width:600px;height:600px;background-repeat:no-repeat;background-position:0 0;filter:brightness(1.35);background-image:conic-gradient(rgba(0,0,0,0),#4d6dff,rgba(0,0,0,0) 50%,rgba(0,0,0,0) 50%,#6e8cff,rgba(0,0,0,0) 100%);animation:rotate 4s linear infinite}
+#cosmic-main{position:relative;width:100%}
 .wrap{padding:14px}.title{font-size:18px;font-weight:700;margin:4px 0 14px}
 .list{display:flex;flex-direction:column;gap:12px}
 .row{display:flex;gap:12px;background:rgba(22,22,40,.58);border-radius:12px;overflow:hidden;border:1px solid rgba(255,255,255,.08);padding:9px;box-shadow:0 4px 16px rgba(0,0,0,.35)}
@@ -202,7 +229,7 @@ body{font-family:-apple-system,sans-serif;background:#0a0e1a;color:#e0e0e0;min-h
 .sdesc{font-size:13px;color:rgba(255,255,255,.68);margin-top:8px;line-height:1.45;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
 .tip{text-align:center;padding:18px;color:rgba(255,255,255,.5);font-size:13px}
 </style></head><body>
-<div class="top"><input class="inp" id="kw" value="${esc(wd)}" placeholder="搜索影片"><button class="sbtn" id="go">搜索</button></div>
+<div class="top"><div class="header-search"><div class="galaxy"></div><div class="search-container"><div class="nebula"></div><div class="starfield"></div><div class="stardust"></div><div class="cosmic-ring"></div><div id="cosmic-main"><input class="cosmic-input" id="kw" value="${esc(wd)}" placeholder="搜索影片..."><div id="input-mask"></div><div id="cosmic-glow"></div><div class="wormhole-border"></div><div id="wormhole-icon"><svg stroke-linejoin="round" stroke-linecap="round" stroke-width="2" stroke="#a9c7ff" fill="none" height="20" width="20" viewBox="0 0 24 24"><circle r="10" cy="12" cx="12"></circle><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path><path d="M2 12h20"></path></svg></div><div id="search-icon"><svg stroke-linejoin="round" stroke-linecap="round" stroke-width="2" stroke="url(#cosmic-search)" fill="none" height="18" width="18" viewBox="0 0 24 24"><circle r="8" cy="11" cx="11"></circle><line y2="16.65" x2="16.65" y1="21" x1="21"></line><defs><linearGradient gradientTransform="rotate(45)" id="cosmic-search"><stop stop-color="#a9c7ff" offset="0%"></stop><stop stop-color="#6e8cff" offset="100%"></stop></linearGradient></defs></svg></div></div></div></div></div>
 <div class="wrap"><div class="title" id="title">搜索「${esc(wd)}」（0个）</div><div class="list" id="list"></div><div class="tip" id="tip">准备加载...</div></div>
 <script>
 var wd=${JSON.stringify(wd||'')},page=0,loading=false,finished=false,count=0;
@@ -210,8 +237,7 @@ function el(s){return document.querySelector(s)}
 function openVod(it){var item=Object.assign({},it);item.url=/^https?:/.test(item.url)?item.url:'https://www.1905dsj.com'+item.url;try{parent.postMessage({type:'dsjDetail',item:item},'*')}catch(e){location.href=item.url}}
 function row(it){var d=document.createElement('div');d.className='row';d.innerHTML='<div class="sposter"><img loading="lazy" src="'+(it.img||'')+'"></div><div class="sinfo"><div class="sname">'+it.title+'</div><div class="sdesc">'+(it.desc||'')+'</div></div>';d.onclick=function(){openVod(it)};return d}
 function load(){if(loading||finished||!wd)return;loading=true;var next=page+1;el('#tip').textContent='正在加载第 '+next+' 页...';fetch('/search-api?wd='+encodeURIComponent(wd)+'&page='+next).then(r=>r.json()).then(j=>{if(!j.ok)throw new Error(j.error||'load failed');if(!j.items.length){finished=true;el('#tip').textContent=count?'— 已显示全部 —':'未找到匹配内容';return}page=next;j.items.forEach(function(it){el('#list').appendChild(row(it));count++});el('#title').textContent='搜索「'+wd+'」（'+count+'个）';el('#tip').textContent='已加载 '+count+' 个，下滑继续加载'}).catch(e=>{el('#tip').textContent='加载失败：'+(e.message||e)}).finally(()=>loading=false)}
-el('#go').onclick=function(){var q=el('#kw').value.trim();if(q)location.href='/search?wd='+encodeURIComponent(q)};
-el('#kw').onkeydown=function(e){if(e.key==='Enter')el('#go').click()};
+el('#kw').onkeydown=function(e){if(e.key==='Enter'){var q=el('#kw').value.trim();if(q)location.href='/search?wd='+encodeURIComponent(q)}};
 var io=new IntersectionObserver(function(es){if(es[0].isIntersecting)load()},{rootMargin:'500px'});
 io.observe(el('#tip'));load();
 </script></body></html>`;
@@ -251,7 +277,7 @@ function tmdbPageHtml(d, vodUrl) {
 <div class=topbar><button class=nbtn onclick="try{parent.postMessage({type:'dsjClose'},'*')}catch(e){history.back()}">←</button></div>
 <div class=content><div class=hero><div class=info><div class=t>${esc(d.title)}</div><div class=sub>${esc(d.originalTitle)}</div><div class=tags>${yr}${rm}${ss}${gTags}${rt}</div></div></div>
 <button class=play onclick="try{parent.postMessage({type:'dsjPlay',url:'${fullUrl.replace(/'/g, "\\'")}'},'*')}catch(e){window.open('${fullUrl.replace(/'/g, "\\'")}','_blank')}">▶ 进入播放</button>
-${d.overview?'<div class=sec><div class=sh>简介</div><div style="font-size:13px;color:rgba(224,224,224,.78);line-height:1.7">'+esc(d.overview)+'</div></div>':''}
+${d.overview?'<div class=sec><div class=sh style="display:flex;align-items:center;justify-content:space-between">简介<button id="togBtn" onclick="var b=this.nextElementSibling;var t=this.textContent;if(b.style.maxHeight&&b.style.maxHeight!==\'none\'){b.style.maxHeight=\'none\';t=\'收起 \u25b2\'}else{b.style.maxHeight=\'4.2em\';t=\'展开 \u25bc\'}this.textContent=t" style="background:none;border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.6);font-size:11px;padding:2px 10px;border-radius:12px;cursor:pointer">展开 \u25bc</button></div><div id="overviewBox" style="font-size:13px;color:rgba(224,224,224,.78);line-height:1.7;max-height:4.2em;overflow:hidden;transition:max-height .3s">'+esc(d.overview)+'</div></div>':''}
 ${castHtml?'<div class=sec><div class=sh>主演</div><div class=clist>'+castHtml+'</div></div>':''}
 </div><button class=fbtn onclick="try{parent.postMessage({type:'dsjClose'},'*')}catch(e){history.back()}">\u2190</button></body></html>`;
 }
