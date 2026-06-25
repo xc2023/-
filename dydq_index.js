@@ -65,12 +65,15 @@ function parseCards(html) {
     const a = li.match(/<a[^>]*href="([^"]*?)"[^>]*title="([^"]*?)"[^>]*data-original="([^"]*?)"/);
     if (!a) continue;
     const remarks = (li.match(/class="[^"]*remarks[^"]*">([^<]*)<\/span>/) || ['',''])[1].trim();
+    const score = (li.match(/class="[^"]*score[^"]*">([^<]*)<\/span>/) || ['',''])[1].trim();
     const sub = (li.match(/class="hl-item-sub[^"]*">([\s\S]*?)<\/div>/) || ['',''])[1];
     cards.push({
       title: a[2],
       url: a[1],
       img: urlFix(a[3]),
       tag: remarks,
+      score: score,
+      status: remarks,
       desc: strip(sub)
     });
   }
@@ -157,7 +160,8 @@ function openVod(it){
 }
 function card(it){
   var d=document.createElement('div');d.className='card';
-  d.innerHTML='<div class="poster"><img loading="lazy" src="'+(it.img||'')+'">'+(it.tag?'<span class="badge">'+it.tag+'</span>':'')+'</div><div class="info"><div class="name">'+it.title+'</div><div class="desc">'+(it.desc||'')+'</div></div>';
+  var descHtml=(it.score?'⭐ '+it.score:'')+((it.status&&it.status!==it.score)?'<span style="color:rgba(255,255,255,.55);margin-left:6px;font-size:10px">'+it.status+'</span>':'')+((it.desc&&it.desc!==it.score&&it.desc!==it.status)?'<span style="color:rgba(255,255,255,.55);margin-left:6px;font-size:10px">'+it.desc+'</span>':'');
+  d.innerHTML='<div class="poster"><img loading="lazy" src="'+(it.img||'')+'">'+(it.tag?'<span class="badge">'+it.tag+'</span>':'')+'</div><div class="info"><div class="name">'+it.title+'</div>'+(descHtml?'<div class="desc">'+descHtml+'</div>':'')+'</div>';
   d.onclick=function(){openVod(it)};
   return d;
 }
