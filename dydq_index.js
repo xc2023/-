@@ -186,11 +186,11 @@ function searchHtml(wd) {
 <title>搜索 ${esc(wd)}</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-body{font-family:-apple-system,sans-serif;background:linear-gradient(135deg,#1e90ff,#ff6347);color:#fff;min-height:100vh}
-.top{position:sticky;top:0;z-index:5;padding:10px;background:rgba(15,20,40,.82);backdrop-filter:blur(10px);display:flex;gap:8px}
-.inp{flex:1;border:0;border-radius:18px;padding:9px 12px;background:rgba(255,255,255,.16);color:#fff;outline:0}
-.inp::placeholder{color:rgba(255,255,255,.65)}
-.sbtn{border:0;border-radius:18px;padding:8px 14px;background:#4fc3f7;color:#fff;font-weight:700}
+body{font-family:-apple-system,sans-serif;background:#0a0e1a;color:#e0e0e0;min-height:100vh}
+.top{position:sticky;top:0;z-index:5;padding:10px 12px;background:linear-gradient(135deg,#0a0e27,#1a1f4e);backdrop-filter:blur(10px);display:flex;align-items:center;gap:8px;box-shadow:0 2px 12px rgba(0,0,0,0.4)}
+.inp{flex:1;border:0;border-radius:18px;padding:9px 12px;background:rgba(255,255,255,.12);color:#fff;outline:0;font-size:14px}
+.inp::placeholder{color:rgba(255,255,255,.55)}
+.sbtn{border:0;border-radius:18px;padding:8px 14px;background:#4fc3f7;color:#fff;font-weight:700;font-size:14px}
 .wrap{padding:14px}.title{font-size:18px;font-weight:700;margin:4px 0 14px}
 .list{display:flex;flex-direction:column;gap:12px}
 .row{display:flex;gap:12px;background:rgba(22,22,40,.58);border-radius:12px;overflow:hidden;border:1px solid rgba(255,255,255,.08);padding:9px;box-shadow:0 4px 16px rgba(0,0,0,.35)}
@@ -200,7 +200,7 @@ body{font-family:-apple-system,sans-serif;background:linear-gradient(135deg,#1e9
 .sinfo{min-width:0;flex:1;padding-top:2px}
 .sname{font-size:18px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .sdesc{font-size:13px;color:rgba(255,255,255,.68);margin-top:8px;line-height:1.45;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
-.tip{text-align:center;padding:18px;color:rgba(255,255,255,.82);font-size:13px}
+.tip{text-align:center;padding:18px;color:rgba(255,255,255,.5);font-size:13px}
 </style></head><body>
 <div class="top"><input class="inp" id="kw" value="${esc(wd)}" placeholder="搜索影片"><button class="sbtn" id="go">搜索</button></div>
 <div class="wrap"><div class="title" id="title">搜索「${esc(wd)}」（0个）</div><div class="list" id="list"></div><div class="tip" id="tip">准备加载...</div></div>
@@ -236,6 +236,8 @@ function tmdbPageHtml(d, vodUrl) {
 .bg{position:fixed;top:0;left:0;right:0;height:56vh;overflow:hidden;z-index:0;background:#0a0e1a}.bg img{width:100%;height:100%;object-fit:cover;object-position:center 20%;filter:brightness(.85)}.bg .fade{position:absolute;bottom:0;left:0;right:0;height:35%;background:linear-gradient(to top,#0a0e1a 0%,rgba(10,14,26,.6) 50%,transparent 100%)}
 .topbar{position:fixed;top:0;left:0;right:0;z-index:20;padding:10px 14px;display:flex;align-items:center}
 .nbtn{background:rgba(0,0,0,.4);backdrop-filter:blur(8px);border:0;color:#fff;width:36px;height:36px;border-radius:50%;cursor:pointer;font-size:22px;display:flex;align-items:center;justify-content:center}
+.fbtn{position:fixed;bottom:24px;right:16px;z-index:30;width:44px;height:44px;border-radius:50%;background:rgba(0,0,0,.5);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.2);color:#fff;font-size:24px;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(0,0,0,.4)}
+.fbtn:active{transform:scale(.9)}
 .content{position:relative;z-index:10;padding-top:38vh}
 .hero{padding:40px 16px 0}.info .t{font-size:22px;font-weight:800;line-height:1.2;margin-bottom:4px;text-shadow:0 2px 8px rgba(0,0,0,.5)}.info .sub{font-size:12px;color:rgba(255,255,255,.55);margin-bottom:8px}.info .tags{display:flex;flex-wrap:wrap;gap:6px}
 .tag{padding:3px 10px;border-radius:14px;font-size:11px;background:rgba(79,195,247,.15);color:#4fc3f7;border:1px solid rgba(79,195,247,.3)}.rtag{padding:3px 10px;border-radius:14px;font-size:12px;font-weight:700;background:rgba(255,193,7,.15);color:#ffc107;border:1px solid rgba(255,193,7,.3)}
@@ -251,7 +253,7 @@ function tmdbPageHtml(d, vodUrl) {
 <button class=play onclick="try{parent.postMessage({type:'dsjPlay',url:'${fullUrl.replace(/'/g, "\\'")}'},'*')}catch(e){window.open('${fullUrl.replace(/'/g, "\\'")}','_blank')}">▶ 进入播放</button>
 ${d.overview?'<div class=sec><div class=sh>简介</div><div style="font-size:13px;color:rgba(224,224,224,.78);line-height:1.7">'+esc(d.overview)+'</div></div>':''}
 ${castHtml?'<div class=sec><div class=sh>主演</div><div class=clist>'+castHtml+'</div></div>':''}
-</div></body></html>`;
+</div><button class=fbtn onclick="try{parent.postMessage({type:'dsjClose'},'*')}catch(e){history.back()}">\u2190</button></body></html>`;
 }
 
 // ========== HTTP路由 ==========
@@ -412,6 +414,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;backgrou
 .pwi .pwt{padding:4px 6px;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:rgba(224,224,224,.9)}
 .pwi .pwr{padding:0 6px 6px;font-size:10px;color:#ffc107}
 .tip{text-align:center;padding:16px;color:rgba(255,255,255,.5);font-size:13px}
+.fbtn{position:fixed;bottom:24px;right:16px;z-index:30;width:44px;height:44px;border-radius:50%;background:rgba(0,0,0,.5);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.2);color:#fff;font-size:24px;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(0,0,0,.4)}
+.fbtn:active{transform:scale(.9)}
 </style></head><body>
 <div class=topbar><button class=nbtn onclick="history.back()">\u2190</button><div style="font-size:16px;font-weight:700">${esc(name)}</div></div>
 <div class=wrap>
@@ -443,7 +447,7 @@ function loadMore(){
 var io=new IntersectionObserver(function(es){if(es[0].isIntersecting)loadMore()},{rootMargin:'300px'});
 io.observe(el('#tip'));
 loadMore();
-<\/script></body></html>`;
+<\/script><button class=fbtn onclick="history.back()">\u2190</button></body></html>`;
         send(res, 200, html, 'text/html; charset=utf-8');
       } catch (err) { send(res, 500, 'parse error'); }
     });
