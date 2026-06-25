@@ -4,7 +4,7 @@ const { URL } = require('url');
 
 const PORT = 9978;
 const SITE = 'https://www.1905dsj.com';
-const TMDB_KEY = '***'; // 你的TMDB key
+const TMDB_KEY = '304ca56b1b7b57ca7a47d9b59946be94';
 const TMDB_BASE = 'https://api.tmdb.org/3';
 const cache = new Map();
 
@@ -98,23 +98,22 @@ function handleHomeApi(res) {
       if (title && href) lunbos.push({ title, url: href, img: urlFix(img), desc: strip(sub) });
     }
     
-    // 热播推荐（9个）
+    // 热播推荐
     const hotItems = [];
-    const hotReg = /热播推荐[\s\S]*?<ul class="hl-vod-list[\s\S]*?clearfix">([\s\S]*?)<\/ul>/;
+    const hotReg = /热播推荐[\s\S]*?<ul class="hl-vod-list[^"]*">([\s\S]*?)<\/ul>/;
     const hotMatch = html.match(hotReg);
     if (hotMatch) {
       const cards = parseCards(hotMatch[1]);
       hotItems.push(...cards.slice(0, 9));
     }
-    
-    // 各分类模块
+
+    // 各分类模块：按 h2.hl-rb-title 分割
     const sectionNames = ['电影','电视剧','综艺','动漫'];
     const sections = [];
-    if (hotItems.length) sections.push({ title: '🔥 热播推荐', items: hotItems });
-    
+    if (hotItems.length) sections.push({ title: '热播推荐', items: hotItems });
+
     for (const name of sectionNames) {
-      // 匹配每个分类板块的影片列表
-      const secReg = new RegExp(name + '<\\/a>[\\s\\S]*?<ul class="hl-vod-list[\\s\\S]*?clearfix">([\\s\\S]*?)<\\/ul>');
+      const secReg = new RegExp(name + '[\\s\\S]*?<ul class="hl-vod-list[^"]*">([\\s\\S]*?)<\\/ul>');
       const secMatch = html.match(secReg);
       if (secMatch) {
         const cards = parseCards(secMatch[1]).slice(0, 6);
