@@ -301,8 +301,9 @@ const server = http.createServer((req, res) => {
   if (path === '/search-api') {
     const wd = u.searchParams.get('wd') || '';
     const page = parseInt(u.searchParams.get('page') || '1', 10);
-    const pg = page > 1 ? '/page/' + page : '';
-    const url = `${SITE}/search${pg}/wd/${encodeURIComponent(wd)}.html`;
+    const url = page > 1
+      ? `${SITE}/vod/search/page/${page}/wd/${encodeURIComponent(wd)}.html`
+      : `${SITE}/vod/search.html?wd=${encodeURIComponent(wd)}`;
     return fetchPage(url, (err, html) => {
       if (err) return send(res, 200, JSON.stringify({ok:false,error:err.message}));
       const items = parseCards(html);
