@@ -65,15 +65,12 @@ function parseCards(html) {
     const a = li.match(/<a[^>]*href="([^"]*?)"[^>]*title="([^"]*?)"[^>]*data-original="([^"]*?)"/);
     if (!a) continue;
     const remarks = (li.match(/class="[^"]*remarks[^"]*">([^<]*)<\/span>/) || ['',''])[1].trim();
-    const score = (li.match(/class="[^"]*score[^"]*">([^<]*)<\/span>/) || ['',''])[1].trim();
     const sub = (li.match(/class="hl-item-sub[^"]*">([\s\S]*?)<\/div>/) || ['',''])[1];
     cards.push({
       title: a[2],
       url: a[1],
       img: urlFix(a[3]),
       tag: remarks,
-      score: score,
-      status: remarks,
       desc: strip(sub)
     });
   }
@@ -108,7 +105,7 @@ function handleHomeApi(res) {
     }
 
     // 各分类模块：按 h2.hl-rb-title 分割
-    const sectionNames = ['电影','电视剧','综艺','动漫'];
+    const sectionNames = ['电影','电视剧','综艺','动漫','短剧'];
     const sections = [];
     if (hotItems.length) sections.push({ title: '热播推荐', items: hotItems });
 
@@ -159,8 +156,7 @@ function openVod(it){
 }
 function card(it){
   var d=document.createElement('div');d.className='card';
-  var descHtml=(it.score?'⭐ '+it.score:'')+((it.status&&it.status!==it.score)?'<span style="color:rgba(255,255,255,.55);margin-left:6px;font-size:10px">'+it.status+'</span>':'')+((it.desc&&it.desc!==it.score&&it.desc!==it.status)?'<span style="color:rgba(255,255,255,.55);margin-left:6px;font-size:10px">'+it.desc+'</span>':'');
-  d.innerHTML='<div class="poster"><img loading="lazy" src="'+(it.img||'')+'">'+(it.tag?'<span class="badge">'+it.tag+'</span>':'')+'</div><div class="info"><div class="name">'+it.title+'</div>'+(descHtml?'<div class="desc">'+descHtml+'</div>':'')+'</div>';
+  d.innerHTML='<div class="poster"><img loading="lazy" src="'+(it.img||'')+'">'+(it.tag?'<span class="badge">'+it.tag+'</span>':'')+'</div><div class="info"><div class="name">'+it.title+'</div>'+(it.desc?'<div class="desc">'+it.desc+'</div>':'')+'</div>';
   d.onclick=function(){openVod(it)};
   return d;
 }
@@ -231,8 +227,7 @@ function tmdbPageHtml(d, vodUrl) {
   const ss = d.seasons?`<span class=tag>共${d.seasons}季${d.eps}集</span>`:'';
   const castHtml = d.cast.map(c=>{
     const img = c.pic?`<img class=cimg src="${c.pic}" loading=lazy onerror="this.style.display='none'">`:'<div class=cimg style="background:#333;display:flex;align-items:center;justify-content:center;color:#666;font-size:18px">?</div>';
-    const safeName = esc(c.name).replace(/'/g, "\\'");
-    return `<div class=cast style="cursor:pointer" onclick="parent.postMessage({type:'dsjSearch',query:'${safeName}'},'*')">${img}<div class=cname>${esc(c.name)}</div></div>`;
+    return `<a class=cast href="/tmdb/person-page?id=${c.id}&name=${encodeURIComponent(c.name)}" target="_self">${img}<div class=cname>${esc(c.name)}</div></a>`;
   }).join('');
   return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>${esc(d.title)}</title>
@@ -247,7 +242,7 @@ function tmdbPageHtml(d, vodUrl) {
 .play{display:block;margin:18px auto 0;width:calc(100% - 32px);max-width:400px;padding:14px;background:rgba(255,255,255,.15);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.25);border-radius:24px;color:#fff;font-size:17px;font-weight:700;cursor:pointer}.play:active{transform:scale(.97)}
 .sec{padding:20px 16px 0}.sh{font-size:15px;font-weight:700;margin-bottom:10px}
 .clist{display:flex;gap:14px;overflow-x:auto;padding-bottom:8px}.clist::-webkit-scrollbar{display:none}
-.cast{flex-shrink:0;width:72px;text-align:center}.cimg{width:62px;height:62px;border-radius:50%;object-fit:cover;background:#222;display:block;margin:0 auto 6px;border:2px solid rgba(255,255,255,.2)}
+.cast{flex-shrink:0;width:72px;text-align:center;cursor:pointer;text-decoration:none;color:#eee}.cimg{width:62px;height:62px;border-radius:50%;object-fit:cover;background:#222;display:block;margin:0 auto 6px;border:2px solid rgba(255,255,255,.2)}
 .cname{font-size:10px;color:rgba(224,224,224,.85);overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font-weight:600}
 </style></head><body>
 <div class=bg>${d.backdrop?'<img src="'+d.backdrop+'">':''}<div class=fade></div></div>
@@ -353,6 +348,104 @@ const server = http.createServer((req, res) => {
         }
       } catch(e){}
       send(res, 200, tmdbPageHtml(d, vodUrl), 'text/html; charset=utf-8');
+    });
+  }
+
+  // TMDB演员详情页
+  if (path === '/tmdb/person-page') {
+    const id = u.searchParams.get('id') || '';
+    const name = u.searchParams.get('name') || '';
+    if (!id) return send(res, 400, 'missing id');
+    const PROF = 'https://image.tmdb.org/t/p/w185';
+    const IMG = 'https://images.tmdb.org/t/p/w500';
+    const pUrl = `${TMDB_BASE}/person/${id}?api_key=${TMDB_KEY}&language=zh-CN&append_to_response=combined_credits`;
+    return fetchPage(pUrl, (e, json) => {
+      if (e) return send(res, 500, 'fetch error');
+      try {
+        const data = JSON.parse(json);
+        const bio = data.biography || '暂无简介';
+        const photo = data.profile_path ? PROF + data.profile_path : '';
+        const birthday = data.birthday || '';
+        const deathday = data.deathday || '';
+        const place = data.place_of_birth || '';
+        const knownFor = data.known_for_department || '';
+        const genderMap = {0:'',1:'女',2:'男'};
+        const gender = genderMap[data.gender] || '';
+        const aka = (data.also_known_as || []).slice(0, 5);
+        const allWorks = ((data.combined_credits && data.combined_credits.cast) || [])
+          .filter(w => (w.media_type === 'movie' || w.media_type === 'tv') && (w.poster_path || w.vote_average > 0))
+          .sort((a, b) => (b.vote_average || 0) - (a.vote_average || 0));
+        const infoHtml = [
+          birthday ? '<div class=info-row><span class=info-label>生日</span><span class=info-val>' + esc(birthday) + (deathday ? ' - ' + esc(deathday) : '') + '</span></div>' : '',
+          place ? '<div class=info-row><span class=info-label>出生地</span><span class=info-val>' + esc(place) + '</span></div>' : '',
+          gender ? '<div class=info-row><span class=info-label>性别</span><span class=info-val>' + gender + '</span></div>' : '',
+          knownFor ? '<div class=info-row><span class=info-label>职业</span><span class=info-val>' + esc(knownFor) + '</span></div>' : '',
+          aka.length ? '<div class=info-row><span class=info-label>别名</span><span class=info-val>' + aka.map(a => esc(a)).join(' / ') + '</span></div>' : ''
+        ].filter(Boolean).join('');
+        const worksJson = JSON.stringify(allWorks.slice(0, 30).map(w => ({
+          title: w.title || w.name || '',
+          poster: w.poster_path ? IMG + w.poster_path : '',
+          rating: w.vote_average ? w.vote_average.toFixed(1) : '',
+          media_type: w.media_type
+        })));
+        const html = `<!doctype html><html><head><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><title>${esc(name)}</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{min-height:100vh;overflow-x:hidden}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:rgba(10,14,26,.92);color:#eee}
+.topbar{position:sticky;top:0;z-index:10;padding:10px 14px;background:rgba(15,20,40,.88);backdrop-filter:blur(10px);display:flex;align-items:center;gap:10px}
+.nbtn{background:rgba(255,255,255,.15);border:0;color:#fff;width:36px;height:36px;border-radius:50%;cursor:pointer;font-size:22px;display:flex;align-items:center;justify-content:center}
+.wrap{max-width:600px;margin:0 auto;padding:16px}
+.photo{display:flex;gap:16px;align-items:flex-start;margin-bottom:16px}
+.photo img{width:110px;border-radius:12px;box-shadow:0 4px 16px rgba(0,0,0,.5)}
+.pinfo{flex:1;min-width:0}
+.nm{font-size:22px;font-weight:800;line-height:1.3}
+.info-row{display:flex;gap:8px;padding:4px 0;font-size:12px;color:rgba(224,224,224,.7)}
+.info-label{flex-shrink:0;color:rgba(79,195,247,.8);min-width:42px}
+.info-val{color:rgba(224,224,224,.85)}
+.bio{font-size:13px;color:rgba(224,224,224,.78);line-height:1.7;margin-bottom:20px}
+.stitle{font-size:15px;font-weight:700;color:#fff;margin-bottom:12px}
+.pworks{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.pwi{cursor:pointer;background:rgba(22,22,40,.6);border-radius:8px;overflow:hidden;border:1px solid rgba(255,255,255,.06);transition:transform .2s}
+.pwi:active{transform:scale(.96)}
+.pwi img{width:100%;aspect-ratio:2/3;object-fit:cover;display:block;background:#161628}
+.pwi .pwt{padding:4px 6px;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:rgba(224,224,224,.9)}
+.pwi .pwr{padding:0 6px 6px;font-size:10px;color:#ffc107}
+.tip{text-align:center;padding:16px;color:rgba(255,255,255,.5);font-size:13px}
+</style></head><body>
+<div class=topbar><button class=nbtn onclick="try{parent.postMessage({type:'dsjClose'},'*')}catch(e){history.back()}">\u2190</button><div style="font-size:16px;font-weight:700">${esc(name)}</div></div>
+<div class=wrap>
+${photo ? '<div class=photo><img src="'+photo+'"><div class=pinfo><div class=nm>'+esc(name)+'</div>'+infoHtml+'</div></div>' : '<div class=nm>'+esc(name)+'</div>'+infoHtml}
+<div class=bio>${esc(bio)}</div>
+<div class=stitle>相关作品</div>
+<div class=pworks id=works></div>
+<div class=tip id=tip>加载中...</div>
+</div>
+<script>
+var allWorks=${worksJson},page=0,per=18,loading=false;
+function el(s){return document.querySelector(s)}
+function addWork(w){
+  var d=document.createElement('div');d.className='pwi';
+  var img=w.poster?'<img src="'+w.poster+'" loading=lazy>':'<div style="width:100%;aspect-ratio:2/3;background:#222"></div>';
+  var safeT=w.title.replace(/'/g,"\\'");
+  d.innerHTML=img+'<div class=pwt>'+w.title+'</div>'+(w.rating?'<div class=pwr>\u2b50 '+w.rating+'</div>':'');
+  d.onclick=function(){parent.postMessage({type:'dsjDetail',item:{title:safeT,url:'',img:w.poster||''}},'*')};
+  el('#works').appendChild(d);
+}
+function loadMore(){
+  if(loading)return;loading=true;
+  var start=page*per,end=Math.min(start+per,allWorks.length);
+  if(start>=allWorks.length){el('#tip').textContent='已显示全部 '+allWorks.length+' 部作品';return}
+  for(var i=start;i<end;i++)addWork(allWorks[i]);
+  page++;loading=false;
+  el('#tip').textContent='已加载 '+Math.min(end,allWorks.length)+' / '+allWorks.length;
+}
+var io=new IntersectionObserver(function(es){if(es[0].isIntersecting)loadMore()},{rootMargin:'300px'});
+io.observe(el('#tip'));
+loadMore();
+<\/script></body></html>`;
+        send(res, 200, html, 'text/html; charset=utf-8');
+      } catch (err) { send(res, 500, 'parse error'); }
     });
   }
 
