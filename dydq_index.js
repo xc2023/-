@@ -223,6 +223,7 @@ io.observe(el('#tip'));load();
 
 // ========== TMDB详情页HTML ==========
 function tmdbPageHtml(d, vodUrl) {
+  const fullUrl = vodUrl && !/^https?:/.test(vodUrl) ? 'https://www.1905dsj.com' + vodUrl : vodUrl;
   const gTags = d.genres.map(g=>`<span class=tag>${esc(g)}</span>`).join('');
   const rt = d.rating>0?`<span class=rtag>⭐ ${d.rating.toFixed(1)}</span>`:'';
   const yr = d.year?`<span class=tag>${d.year}</span>`:'';
@@ -230,7 +231,8 @@ function tmdbPageHtml(d, vodUrl) {
   const ss = d.seasons?`<span class=tag>共${d.seasons}季${d.eps}集</span>`:'';
   const castHtml = d.cast.map(c=>{
     const img = c.pic?`<img class=cimg src="${c.pic}" loading=lazy onerror="this.style.display='none'">`:'<div class=cimg style="background:#333;display:flex;align-items:center;justify-content:center;color:#666;font-size:18px">?</div>';
-    return `<div class=cast>${img}<div class=cname>${esc(c.name)}</div></div>`;
+    const safeName = esc(c.name).replace(/'/g, "\\'");
+    return `<div class=cast style="cursor:pointer" onclick="parent.postMessage({type:'dsjSearch',query:'${safeName}'},'*')">${img}<div class=cname>${esc(c.name)}</div></div>`;
   }).join('');
   return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>${esc(d.title)}</title>
@@ -251,7 +253,7 @@ function tmdbPageHtml(d, vodUrl) {
 <div class=bg>${d.backdrop?'<img src="'+d.backdrop+'">':''}<div class=fade></div></div>
 <div class=topbar><button class=nbtn onclick="try{parent.postMessage({type:'dsjClose'},'*')}catch(e){history.back()}">←</button></div>
 <div class=content><div class=hero><div class=info><div class=t>${esc(d.title)}</div><div class=sub>${esc(d.originalTitle)}</div><div class=tags>${yr}${rm}${ss}${gTags}${rt}</div></div></div>
-<button class=play onclick="try{parent.postMessage({type:'dsjPlay',url:${JSON.stringify(vodUrl)}},'*')}catch(e){window.open(${JSON.stringify(vodUrl)},'_blank')}">▶ 进入播放</button>
+<button class=play onclick="try{parent.postMessage({type:'dsjPlay',url:'${fullUrl.replace(/'/g, "\\'")}'},'*')}catch(e){window.open('${fullUrl.replace(/'/g, "\\'")}','_blank')}">▶ 进入播放</button>
 ${d.overview?'<div class=sec><div class=sh>简介</div><div style="font-size:13px;color:rgba(224,224,224,.78);line-height:1.7">'+esc(d.overview)+'</div></div>':''}
 ${castHtml?'<div class=sec><div class=sh>主演</div><div class=clist>'+castHtml+'</div></div>':''}
 </div></body></html>`;
