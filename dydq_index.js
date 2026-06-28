@@ -263,6 +263,17 @@ const server = http.createServer((req, res) => {
   if (req.method === 'OPTIONS') return send(res, 204, '');
   if (path === '/health') return send(res, 200, 'ok');
 
+  if (path === '/shutdown') {
+    send(res, 200, 'shutting down');
+    setTimeout(() => {
+      try { server.close(); } catch(e) {}
+      try {
+        for (const [k, v] of cache) { cache.delete(k); }
+      } catch(e) {}
+    }, 200);
+    return;
+  }
+
   // 首页数据
   if (path === '/home-api') return handleHomeApi(res);
 
