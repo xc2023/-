@@ -80,15 +80,15 @@ function parseCards(html) {
 // 解析最新页面（map列表格式）
 function parseMapItems(html) {
   const items = [];
-  const reg = /<li class="hl-list-item hl-col-xs-12">([\s\S]*?)<\/li>/gi;
+  const reg = /<li class="hl-list-item[^"]*">([\s\S]*?)<\/li>/gi;
   let m;
   while ((m = reg.exec(html))) {
     const li = m[1];
     const href = (li.match(/href="([^"]*?)"/) || ['',''])[1];
-    const title = (li.match(/class="hl-item-title hl-text-site">([^<]*)/) || ['',''])[1].trim();
+    const title = (li.match(/class="hl-item-title[^"]*">([^<]*)/) || ['',''])[1].trim();
     const img = (li.match(/data-original="([^"]*?)"/) || ['',''])[1];
     const status = (li.match(/hl-text-subs hl-hidden-xs">\s*\/\s*([^<]*)/) || ['',''])[1].trim();
-    const cat = (li.match(/hl-item-div2[\s\S]*?hl-item-datas[^>]*>\s*([\s\S]*?)\s*<\/div>/) || ['',''])[1];
+    const cat = (li.match(/hl-item-datas[^>]*>\s*([\s\S]*?)\s*<\/div>/) || ['',''])[1];
     const time = (li.match(/hl-item-time[^>]*>([\s\S]*?)<\/div>/) || ['',''])[1];
     if (title && href) {
       items.push({
@@ -106,7 +106,7 @@ function parseMapItems(html) {
 // 解析排行页面（rank列表格式）
 function parseRankItems(html) {
   const items = [];
-  const reg = /<li class="hl-list-item hl-col-xs-12">([\s\S]*?)<\/li>/gi;
+  const reg = /<li class="hl-list-item[^"]*">([\s\S]*?)<\/li>/gi;
   let m;
   while ((m = reg.exec(html))) {
     const li = m[1];
@@ -199,7 +199,7 @@ function handleHomeApi(res) {
 
 // ========== 分类页HTML ==========
 function categoryHtml(cid, name) {
-  return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="referrer" content="no-referrer">
+  return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${esc(name)}</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
@@ -257,7 +257,7 @@ window.addEventListener('scroll',function(){btt.style.display=window.scrollY>400
 
 // ========== 搜索页HTML ==========
 function latestHtml() {
-  return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="referrer" content="no-referrer">
+  return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>最新上线</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:linear-gradient(135deg,#1e90ff,#ff6347);color:#fff;min-height:100vh}
@@ -269,14 +269,14 @@ var page=0,loading=false,finished=false,count=0;
 function el(s){return document.querySelector(s)}
 function openVod(it){var item=Object.assign({},it);item.url=/^https?:/.test(item.url)?item.url:'https://www.1905dsj.com'+item.url;try{parent.postMessage({type:'dsjDetail',item:item},'*')}catch(e){location.href=item.url}}
 function row(it){var d=document.createElement('div');d.className='row';var tagHtml=it.tag?'<span class="sptext">'+it.tag+'</span>':'';d.innerHTML='<div class="sposter"><img loading="lazy" src="'+(it.img||'')+'">'+tagHtml+'</div><div class="sinfo"><div class="sname">'+it.title+'</div>'+(it.desc?'<div class="smeta" style="-webkit-line-clamp:5">'+it.desc+'</div>':'')+'</div>';var img=d.querySelector('.sposter img');if(img){img.onerror=function(){this.src='https://picsum.photos/seed/'+Math.floor(Math.random()*1000)+'/300/400'}}d.onclick=function(){openVod(it)};return d}
-function load(){if(loading||finished)return;loading=true;var next=page+1;el('#tip').textContent='正在加载第 '+next+' 页...';fetch('/latest-api?page='+next).then(r=>r.json()).then(j=>{if(!j.ok)throw new Error(j.error||'load failed');if(!j.items.length){finished=true;el('#tip').textContent=count?'— 已显示全部 —':'暂无数据';return}page=next;j.items.forEach(function(it){el('#list').appendChild(row(it));count++});el('#title').textContent='🕐 最新上线（'+count+'部）';el('#tip').textContent='已加载 '+count+' 部，下滑继续加载'}).catch(e=>{el('#tip').textContent='加载失败：'+(e.message||e)}).finally(()=>loading=false)}
+function load(){if(loading||finished)return;loading=true;var next=page+1;el('#tip').textContent='正在加载第 '+next+' 页...';fetch('/latest-api?page='+next).then(r=>{if(!r.ok)throw new Error('HTTP '+r.status);return r.json()}).then(j=>{if(!j.ok)throw new Error(j.error||'load failed');if(!j.items.length){finished=true;el('#tip').textContent=count?'— 已显示全部 —':'暂无数据';return}page=next;j.items.forEach(function(it){el('#list').appendChild(row(it));count++});el('#title').textContent='🕐 最新上线（'+count+'部）';el('#tip').textContent='已加载 '+count+' 部，下滑继续加载'}).catch(e=>{loading=false;el('#tip').innerHTML='<span style="color:#ff6b6b">加载失败：'+(e.message||e)+'</span><br><button onclick="loading=false;load()" style="margin-top:8px;padding:6px 16px;border-radius:8px;border:0;background:rgba(255,255,255,.2);color:#fff;cursor:pointer">重试</button>'})}
 var io=new IntersectionObserver(function(es){if(es[0].isIntersecting)load()},{rootMargin:'500px'});
 io.observe(el('#tip'));load();
 <\/script></body></html>`;
 }
 
 function rankHtml() {
-  return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="referrer" content="no-referrer">
+  return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>热门排行</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:linear-gradient(135deg,#1e90ff,#ff6347);color:#fff;min-height:100vh}
@@ -293,14 +293,14 @@ function el(s){return document.querySelector(s)}
 function initTabs(){var c=document.getElementById('tabs');tabs.forEach(function(tab,i){var t=document.createElement('div');t.className='tab'+(i===0?' on':'');t.textContent=tab.name;t.onclick=function(){document.querySelectorAll('.tab').forEach(function(b){b.className='tab'});t.className='tab on';curType=tab.type;page=0;finished=false;count=0;el('#list').innerHTML='';el('#title').textContent='🔥 热门排行（0部）';load()};c.appendChild(t)})}
 function openVod(it){var item=Object.assign({},it);item.url=/^https?:/.test(item.url)?item.url:'https://www.1905dsj.com'+item.url;try{parent.postMessage({type:'dsjDetail',item:item},'*')}catch(e){location.href=item.url}}
 function row(it,idx){var d=document.createElement('div');d.className='row';var tagHtml=it.tag?'<span class="sptext">'+it.tag+'</span>':'';var badge=idx<6?'<div class="rank-badge" style="background:'+rankColors[idx]+'">'+(idx+1)+'</div>':'';d.innerHTML='<div class="sposter"><img loading="lazy" src="'+(it.img||'')+'">'+tagHtml+badge+'</div><div class="sinfo"><div class="sname">'+it.title+'</div>'+(it.desc?'<div class="smeta" style="-webkit-line-clamp:5">'+it.desc+'</div>':'')+'</div>';var img=d.querySelector('.sposter img');if(img){img.onerror=function(){this.src='https://picsum.photos/seed/'+Math.floor(Math.random()*1000)+'/300/400'}}d.onclick=function(){openVod(it)};return d}
-function load(){if(loading||finished)return;loading=true;var next=page+1;el('#tip').textContent='正在加载第 '+next+' 页...';fetch('/rank-api?page='+next+'&type='+curType).then(r=>r.json()).then(j=>{if(!j.ok)throw new Error(j.error||'load failed');if(!j.items.length){finished=true;el('#tip').textContent=count?'— 已显示全部 —':'暂无数据';return}page=next;j.items.forEach(function(it){el('#list').appendChild(row(it,count));count++});el('#title').textContent='🔥 热门排行（'+count+'部）';el('#tip').textContent='已加载 '+count+' 部，下滑继续加载'}).catch(e=>{el('#tip').textContent='加载失败：'+(e.message||e)}).finally(()=>loading=false)}
+function load(){if(loading||finished)return;loading=true;var next=page+1;el('#tip').textContent='正在加载第 '+next+' 页...';fetch('/rank-api?page='+next+'&type='+curType).then(r=>{if(!r.ok)throw new Error('HTTP '+r.status);return r.json()}).then(j=>{if(!j.ok)throw new Error(j.error||'load failed');if(!j.items.length){finished=true;el('#tip').textContent=count?'— 已显示全部 —':'暂无数据';return}page=next;j.items.forEach(function(it){el('#list').appendChild(row(it,count));count++});el('#title').textContent='🔥 热门排行（'+count+'部）';el('#tip').textContent='已加载 '+count+' 部，下滑继续加载'}).catch(e=>{loading=false;el('#tip').innerHTML='<span style="color:#ff6b6b">加载失败：'+(e.message||e)+'</span><br><button onclick="loading=false;load()" style="margin-top:8px;padding:6px 16px;border-radius:8px;border:0;background:rgba(255,255,255,.2);color:#fff;cursor:pointer">重试</button>'})}
 var io=new IntersectionObserver(function(es){if(es[0].isIntersecting)load()},{rootMargin:'500px'});
 io.observe(el('#tip'));initTabs();load();
 <\/script></body></html>`;
 }
 
 function topicHtml() {
-  return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="referrer" content="no-referrer">
+  return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>专题</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:linear-gradient(135deg,#1e90ff,#ff6347);color:#fff;min-height:100vh}
@@ -318,7 +318,7 @@ var page=0,loading=false,finished=false,count=0;
 function el(s){return document.querySelector(s)}
 function openTopic(it){location.href='/topic-detail?url='+encodeURIComponent(it.url)+'&title='+encodeURIComponent(it.title)}
 function row(it){var d=document.createElement('div');d.className='card';d.innerHTML='<img loading="lazy" src="'+(it.img||'')+'"><div class="card-overlay"><div class="card-title">'+it.title+'</div>'+(it.tag?'<div class="card-count">'+it.tag+'</div>':'')+'</div>';var img=d.querySelector('img');if(img){img.onerror=function(){this.src='https://picsum.photos/seed/'+Math.floor(Math.random()*1000)+'/600/300'}}d.onclick=function(){openTopic(it)};return d}
-function load(){if(loading||finished)return;loading=true;var next=page+1;el('#tip').textContent='正在加载第 '+next+' 页...';fetch('/topic-api?page='+next).then(r=>r.json()).then(j=>{if(!j.ok)throw new Error(j.error||'load failed');if(!j.items.length){finished=true;el('#tip').textContent=count?'— 已显示全部 —':'暂无数据';return}page=next;j.items.forEach(function(it){el('#list').appendChild(row(it));count++});el('#title').textContent='📋 专题（'+count+'个）';el('#tip').textContent='已加载 '+count+' 个，下滑继续加载'}).catch(e=>{el('#tip').textContent='加载失败：'+(e.message||e)}).finally(()=>loading=false)}
+function load(){if(loading||finished)return;loading=true;var next=page+1;el('#tip').textContent='正在加载第 '+next+' 页...';fetch('/topic-api?page='+next).then(r=>{if(!r.ok)throw new Error('HTTP '+r.status);return r.json()}).then(j=>{if(!j.ok)throw new Error(j.error||'load failed');if(!j.items.length){finished=true;el('#tip').textContent=count?'— 已显示全部 —':'暂无数据';return}page=next;j.items.forEach(function(it){el('#list').appendChild(row(it));count++});el('#title').textContent='📋 专题（'+count+'个）';el('#tip').textContent='已加载 '+count+' 个，下滑继续加载'}).catch(e=>{loading=false;el('#tip').innerHTML='<span style="color:#ff6b6b">加载失败：'+(e.message||e)+'</span><br><button onclick="loading=false;load()" style="margin-top:8px;padding:6px 16px;border-radius:8px;border:0;background:rgba(255,255,255,.2);color:#fff;cursor:pointer">重试</button>'})}
 var io=new IntersectionObserver(function(es){if(es[0].isIntersecting)load()},{rootMargin:'500px'});
 io.observe(el('#tip'));load();
 <\/script></body></html>`;
@@ -326,7 +326,7 @@ io.observe(el('#tip'));load();
 
 function topicDetailHtml(topicUrl, topicTitle) {
   const escUrl = topicUrl.replace(/'/g, "\\'");
-  return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="referrer" content="no-referrer">
+  return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${esc(topicTitle)}</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:linear-gradient(135deg,#1e90ff,#ff6347);color:#fff;min-height:100vh}
@@ -341,14 +341,14 @@ var topicUrl='${escUrl}';
 function el(s){return document.querySelector(s)}
 function openVod(it){var item=Object.assign({},it);item.url=/^https?:/.test(item.url)?item.url:'https://www.1905dsj.com'+item.url;try{parent.postMessage({type:'dsjDetail',item:item},'*')}catch(e){location.href=item.url}}
 function row(it){var d=document.createElement('div');d.className='row';var tagHtml=it.tag?'<span class="sptext">'+it.tag+'</span>':'';d.innerHTML='<div class="sposter"><img loading="lazy" src="'+(it.img||'')+'">'+tagHtml+'</div><div class="sinfo"><div class="sname">'+it.title+'</div>'+(it.desc?'<div class="smeta" style="-webkit-line-clamp:5">'+it.desc+'</div>':'')+'</div>';var img=d.querySelector('.sposter img');if(img){img.onerror=function(){this.src='https://picsum.photos/seed/'+Math.floor(Math.random()*1000)+'/300/400'}}d.onclick=function(){openVod(it)};return d}
-function load(){if(loading||finished)return;loading=true;var next=page+1;el('#tip').textContent='正在加载第 '+next+' 页...';fetch('/topic-detail-api?page='+next+'&url='+encodeURIComponent(topicUrl)).then(r=>r.json()).then(j=>{if(!j.ok)throw new Error(j.error||'load failed');if(!j.items.length){finished=true;el('#tip').textContent=count?'— 已显示全部 —':'暂无数据';return}page=next;j.items.forEach(function(it){el('#list').appendChild(row(it));count++});el('#title').textContent='${esc(topicTitle)}（'+count+'部）';el('#tip').textContent='已加载 '+count+' 部，下滑继续加载'}).catch(e=>{el('#tip').textContent='加载失败：'+(e.message||e)}).finally(()=>loading=false)}
+function load(){if(loading||finished)return;loading=true;var next=page+1;el('#tip').textContent='正在加载第 '+next+' 页...';fetch('/topic-detail-api?page='+next+'&url='+encodeURIComponent(topicUrl)).then(r=>{if(!r.ok)throw new Error('HTTP '+r.status);return r.json()}).then(j=>{if(!j.ok)throw new Error(j.error||'load failed');if(!j.items.length){finished=true;el('#tip').textContent=count?'— 已显示全部 —':'暂无数据';return}page=next;j.items.forEach(function(it){el('#list').appendChild(row(it));count++});el('#title').textContent='${esc(topicTitle)}（'+count+'部）';el('#tip').textContent='已加载 '+count+' 部，下滑继续加载'}).catch(e=>{loading=false;el('#tip').innerHTML='<span style="color:#ff6b6b">加载失败：'+(e.message||e)+'</span><br><button onclick="loading=false;load()" style="margin-top:8px;padding:6px 16px;border-radius:8px;border:0;background:rgba(255,255,255,.2);color:#fff;cursor:pointer">重试</button>'})}
 var io=new IntersectionObserver(function(es){if(es[0].isIntersecting)load()},{rootMargin:'500px'});
 io.observe(el('#tip'));load();
 <\/script></body></html>`;
 }
 
 function searchHtml(wd) {
-  return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="referrer" content="no-referrer">
+  return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>搜索 ${esc(wd)}</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:linear-gradient(135deg,#1e90ff,#ff6347);color:#fff;min-height:100vh}
@@ -388,7 +388,7 @@ function tmdbPageHtml(d, vodUrl, fallbackImg) {
       overviewHtml = '<div class=sec><div class=sh>剧情简介</div><div class="desc">' + esc(d.overview) + '</div></div>';
     }
   }
-  return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="referrer" content="no-referrer">
+  return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>${esc(d.title)}</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}body{font-family:-apple-system,sans-serif;background:rgba(10,14,26,.85);color:#eee}
