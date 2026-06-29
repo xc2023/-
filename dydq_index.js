@@ -92,7 +92,11 @@ function handleHomeApi(res) {
       const title = (b.match(/title="([^"]*?)"/) || ['',''])[1];
       const img = (b.match(/data-original="([^"]*?)"/) || ['',''])[1];
       const sub = (b.match(/class="hl-br-sub[^"]*">([\s\S]*?)<\/div>/) || ['',''])[1];
-      if (title && href) lunbos.push({ title, url: href, img: urlFix(img), desc: strip(sub) });
+      let type = strip((b.match(/class="hl-br-type[^"]*">([\s\S]*?)<\/[^>]+>/) || ['',''])[1]);
+      if (!type) type = strip((b.match(/class="[^"]*hl-br-cate[^"]*">([\s\S]*?)<\/[^>]+>/) || ['',''])[1]);
+      if (!type) type = strip((b.match(/class="[^"]*pic-tag[^"]*"[^>]*>([\s\S]*?)<\/[^>]+>/) || ['',''])[1]);
+      if (!type) type = strip((b.match(/class="[^"]*tag[^"]*"[^>]*>([\s\S]*?)<\/[^>]+>/) || ['',''])[1]);
+      if (title && href) lunbos.push({ title, url: href, img: urlFix(img), desc: strip(sub), type });
     }
     
     // 热播推荐
