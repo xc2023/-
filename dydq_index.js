@@ -628,7 +628,7 @@ const server = http.createServer((req, res) => {
         }
       } catch(e){}
       if (!d.overview && !d.cast.length) {
-        d.overview = '未在 TMDB 匹配到该影片信息，以下为网站数据。';
+        d.overview = '未在 TMDB 匹配到该影片信息。';
       }
       send(res, 200, tmdbPageHtml(d, vodUrl, img), 'text/html; charset=utf-8');
     });
