@@ -88,15 +88,35 @@ function parseMapItems(html) {
     const title = (li.match(/class="hl-item-title[^"]*">([^<]*)/) || ['',''])[1].trim();
     const img = (li.match(/data-original="([^"]*?)"/) || ['',''])[1];
     const status = (li.match(/hl-text-subs hl-hidden-xs">\s*\/\s*([^<]*)/) || ['',''])[1].trim();
-    const cat = (li.match(/hl-item-datas[^>]*>\s*([\s\S]*?)\s*<\/div>/) || ['',''])[1];
+    const cat = (li.match(/hl-item-datas[^>]*>\s*([\s\S]*?)\s*<\/div>/) || ['',''])[1]; // div2 分类
     const time = (li.match(/hl-item-time[^>]*>([\s\S]*?)<\/div>/) || ['',''])[1];
+
+    // ---- 新增：提取 div3（年份/国家/类型） ----
+    const div3Match = li.match(/<div[^>]*class="[^"]*hl-item-div3[^"]*"[^>]*>[\s\S]*?<div[^>]*class="[^"]*hl-item-datas[^"]*"[^>]*>([\s\S]*?)<\/div>/);
+    let info = '';
+    if (div3Match) {
+      let inner = div3Match[1]
+        .replace(/<span[^>]*>/g, '')
+        .replace(/<\/span>/g, '')
+        .replace(/<i[^>]*>/g, '')
+        .replace(/<\/i>/g, '');
+      info = inner.replace(/\s+/g, ' ').trim();
+    }
+
+    // ---- 新增：提取 div4（简介） ----
+    const div4Match = li.match(/<div[^>]*class="[^"]*hl-item-div4[^"]*"[^>]*>[\s\S]*?<div[^>]*class="[^"]*hl-item-datas[^"]*"[^>]*>([\s\S]*?)<\/div>/);
+    let intro = div4Match ? div4Match[1].trim() : '';
+
     if (title && href) {
       items.push({
         title: title,
         url: href,
         img: urlFix(img),
-        tag: strip(cat),
-        desc: (strip(status) + ' ' + strip(time)).trim()
+        tag: strip(status),                    // 分类标签（显示在图片上或右上角）
+        desc: (strip(status) + ' ' + strip(time)).trim(), // 状态+时间（作为底部描述）
+        time: strip(time),                  // 单独时间（用于底部固定）
+        info: info,                         // 年份/国家/类型（中间弹性上部）
+        intro: intro                        // 简介（中间弹性下部，前端截断）
       });
     }
   }
@@ -268,7 +288,7 @@ function latestHtml() {
 var page=0,loading=false,finished=false,count=0;
 function el(s){return document.querySelector(s)}
 function openVod(it){var item=Object.assign({},it);item.url=/^https?:/.test(item.url)?item.url:'https://www.1905dsj.com'+item.url;try{parent.postMessage({type:'dsjDetail',item:item},'*')}catch(e){location.href=item.url}}
-function row(it){var d=document.createElement('div');d.className='row';var tagHtml=it.tag?'<span class="sptext">'+it.tag+'</span>':'';d.innerHTML='<div class="sposter"><img loading="lazy" src="'+(it.img||'')+'">'+tagHtml+'</div><div class="sinfo"><div class="sname">'+it.title+'</div>'+(it.desc?'<div class="smeta" style="-webkit-line-clamp:5">'+it.desc+'</div>':'')+'</div>';var img=d.querySelector('.sposter img');if(img){img.onerror=function(){this.src='https://picsum.photos/seed/'+Math.floor(Math.random()*1000)+'/300/400'}}d.onclick=function(){openVod(it)};return d}
+function row(it){var d=document.createElement('div');d.className='row';var tag=it.tag?'<span class="sptext">'+it.tag+'</span>':'';var mid='';if(it.info||it.intro){var inf=it.info?'<div style="font-size:12px;color:rgba(255,255,255,0.7);">'+it.info+'</div>':'';var int=it.intro?'<div class="smeta" style="-webkit-line-clamp:4;font-size:12px;color:rgba(255,255,255,0.6);">'+it.intro+'</div>':'';mid='<div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:4px;min-height:0;overflow:hidden;">'+inf+int+'</div>'}var tim=it.time?'<div style="font-size:11px;color:rgba(255,255,255,0.4);flex-shrink:0;">'+it.time+'</div>':'';d.innerHTML='<div class="sposter"><img loading="lazy" src="'+(it.img||'')+'">'+tag+'</div><div class="sinfo" style="display:flex;flex-direction:column;justify-content:space-between;padding:4px 0;min-height:0;"><div class="sname" style="flex-shrink:0;">'+it.title+'</div>'+(mid||'')+(tim||'')+'</div>';var img=d.querySelector('.sposter img');if(img){img.onerror=function(){this.src='https://picsum.photos/seed/'+Math.floor(Math.random()*1000)+'/300/400'}}d.onclick=function(){openVod(it)};return d}
 function load(){if(loading||finished)return;loading=true;var next=page+1;el('#tip').textContent='正在加载第 '+next+' 页...';fetch('/latest-api?page='+next).then(r=>{if(!r.ok)throw new Error('HTTP '+r.status);return r.json()}).then(j=>{if(!j.ok)throw new Error(j.error||'load failed');if(!j.items.length){finished=true;el('#tip').textContent=count?'— 已显示全部 —':'暂无数据';return}page=next;j.items.forEach(function(it){el('#list').appendChild(row(it));count++});el('#title').textContent='🕐 最新上线（'+count+'部）';el('#tip').textContent='已加载 '+count+' 部，下滑继续加载'}).catch(e=>{loading=false;el('#tip').innerHTML='<span style="color:#ff6b6b">加载失败：'+(e.message||e)+'</span><br><button onclick="loading=false;load()" style="margin-top:8px;padding:6px 16px;border-radius:8px;border:0;background:rgba(255,255,255,.2);color:#fff;cursor:pointer">重试</button>'})}
 var io=new IntersectionObserver(function(es){if(es[0].isIntersecting)load()},{rootMargin:'500px'});
 io.observe(el('#tip'));load();
