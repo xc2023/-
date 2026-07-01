@@ -422,7 +422,7 @@ function tmdbPageHtml(d, vodUrl, fallbackImg) {
   }
   return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>${esc(d.title)}</title>
-<link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=ZCOOL+KuaiLe&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}body{font-family:-apple-system,sans-serif;background:rgba(10,14,26,.85);color:#eee}
 .bg{position:fixed;top:0;left:0;right:0;height:56vh;overflow:hidden;z-index:0;background:#0a0e1a}.bg img{width:100%;height:100%;object-fit:cover;object-position:center 20%;filter:brightness(.85)}.bg .fade{position:absolute;bottom:0;left:0;right:0;height:35%;background:linear-gradient(to top,#0a0e1a 0%,rgba(10,14,26,.6) 50%,transparent 100%)}
@@ -431,7 +431,8 @@ function tmdbPageHtml(d, vodUrl, fallbackImg) {
 .fbtn{position:fixed;bottom:24px;right:16px;z-index:30;width:44px;height:44px;border-radius:50%;background:rgba(0,0,0,.5);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.2);color:#fff;font-size:24px;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(0,0,0,.4)}
 .fbtn:active{transform:scale(.9)}
 .content{position:relative;z-index:10;padding-top:38vh}
-.hero{padding:40px 16px 0}.info .t {font-family: 'Ma Shan Zheng', cursive;font-size: 39px;font-weight: 400;line-height: 1.2;margin-bottom: 16px;text-shadow: 0 2px 8px rgba(0,0,0,.5);}.info .sub { display: none; }.info .tags{display:flex;flex-wrap:wrap;gap:6px}
+.hero{padding:40px 16px 0}.info .t{font-family:'ZCOOL KuaiLe',cursive;font-size:39px;font-weight:400;line-height:1.2;margin-bottom:16px;background:linear-gradient(135deg,#f6d365,#fda085,#f6d365,#fda085);background-size:200% 200%;-webkit-background-clip:text;-webkit-text-fill-color:transparent;color:transparent;animation:gradientMove 3s ease infinite;filter:drop-shadow(0 2px 8px rgba(0,0,0,.5))}
+@keyframes gradientMove{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}.info .sub { display: none; }.info .tags{display:flex;flex-wrap:wrap;gap:6px}
 .tag{padding:3px 10px;border-radius:14px;font-size:11px;background:rgba(79,195,247,.15);color:#4fc3f7;border:1px solid rgba(79,195,247,.3)}.rtag{padding:3px 10px;border-radius:14px;font-size:12px;font-weight:700;background:rgba(255,193,7,.15);color:#ffc107;border:1px solid rgba(255,193,7,.3)}
 .play{display:block;margin:18px auto 0;width:calc(100% - 32px);max-width:400px;padding:14px;background:rgba(255,255,255,.15);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.25);border-radius:24px;color:#fff;font-size:17px;font-weight:700;cursor:pointer}.play:active{transform:scale(.97)}
 .sec{padding:20px 16px 0}.sh{font-size:15px;font-weight:700;margin-bottom:10px}
