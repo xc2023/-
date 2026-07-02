@@ -1,12 +1,66 @@
 const http = require('http');
 const https = require('https');
 const { URL } = require('url');
+const fs = require('fs');
+const path = require('path');
 
 const PORT = 9979;
 const SITE = 'https://www.1905dsj.com';
 const TMDB_KEY = '304ca56b1b7b57ca7a47d9b59946be94';
 const TMDB_BASE = 'https://api.tmdb.org/3';
 const cache = new Map();
+
+// ========== 收藏 & 历史 数据存储 ==========
+const DATA_DIR = path.join(__dirname, 'data');
+const FAV_FILE = path.join(DATA_DIR, 'favorites.json');
+const HIS_FILE = path.join(DATA_DIR, 'history.json');
+
+function ensureDataDir() {
+  if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
+}
+
+function readJSON(file) {
+  try { return JSON.parse(fs.readFileSync(file, 'utf8')); } catch(e) { return []; }
+}
+
+function writeJSON(file, data) {
+  ensureDataDir();
+  fs.writeFileSync(file, JSON.stringify(data, null, 2), 'utf8');
+}
+
+function favList() { return readJSON(FAV_FILE); }
+function hisList() { return readJSON(HIS_FILE); }
+
+function favAdd(item) {
+  const list = favList();
+  const id = item.id || (item.url || '').replace(/[^a-zA-Z0-9]/g, '_');
+  if (list.some(f => f.id === id)) return { ok: true, msg: 'already' };
+  list.unshift({ id, title: item.title||'', img: item.img||'', url: item.url||'', source: item.source||'1905dsj', addedAt: Date.now() });
+  writeJSON(FAV_FILE, list);
+  return { ok: true, msg: 'added' };
+}
+
+function favRemove(id) {
+  const list = favList().filter(f => f.id !== id);
+  writeJSON(FAV_FILE, list);
+  return { ok: true };
+}
+
+function favCheck(id) { return favList().some(f => f.id === id); }
+
+function hisAdd(item) {
+  const list = hisList();
+  const id = item.id || (item.url || '').replace(/[^a-zA-Z0-9]/g, '_');
+  const exist = list.findIndex(h => h.id === id);
+  const entry = { id, title: item.title||'', img: item.img||'', url: item.url||'', source: item.source||'1905dsj', lastWatch: Date.now(), episode: item.episode||'' };
+  if (exist >= 0) { list.splice(exist, 1); }
+  list.unshift(entry);
+  if (list.length > 200) list.length = 200;
+  writeJSON(HIS_FILE, list);
+  return { ok: true };
+}
+
+function hisClear() { writeJSON(HIS_FILE, []); return { ok: true }; }
 
 // ========== 工具函数 ==========
 function send(res, code, body, type) {
@@ -377,6 +431,94 @@ io.observe(el('#tip'));load();
 <\/script></body></html>`;
 }
 
+// ========== 收藏页HTML ==========
+function favoritesHtml() {
+  return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>我的收藏</title>
+<style>
+${COMMON_STYLE}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+.topbar{display:flex;align-items:center;padding:4px 0 10px;gap:10px}.back{background:rgba(0,0,0,.4);backdrop-filter:blur(8px);border:0;color:#fff;width:36px;height:36px;border-radius:50%;cursor:pointer;font-size:22px;display:flex;align-items:center;justify-content:center}.toptitle{font-size:16px;font-weight:700}
+.title{font-size:18px;font-weight:700;margin:4px 0 14px}.list{display:flex;flex-direction:column;gap:12px}
+.row{display:flex;gap:12px;background:rgba(22,22,40,.58);border-radius:12px;overflow:hidden;border:1px solid rgba(255,255,255,.08);padding:9px;box-shadow:0 4px 16px rgba(0,0,0,.35);transition:transform .15s;position:relative}
+.row:active{transform:scale(.98)}
+.sposter{position:relative;flex:0 0 112px;width:112px;height:150px;background:#161628;border-radius:9px;overflow:hidden}
+.sposter img{width:100%;height:100%;object-fit:cover;display:block}
+.sinfo{min-width:0;flex:1;display:flex;flex-direction:column;justify-content:center}
+.sname{font-size:16px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.smeta{font-size:12px;color:rgba(255,255,255,.7);margin-top:6px}
+.delbtn{position:absolute;top:8px;right:8px;background:rgba(255,71,87,.8);border:0;color:#fff;width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .2s}
+.row:hover .delbtn,.row:active .delbtn{opacity:1}
+.clearbtn{background:rgba(255,71,87,.2);border:1px solid rgba(255,71,87,.4);color:#ff4757;padding:4px 12px;border-radius:16px;font-size:12px;cursor:pointer}
+.tip{text-align:center;padding:18px;color:rgba(255,255,255,.82);font-size:13px}
+</style></head><body>
+<div class="wrap"><div class="topbar"><div style="display:flex;align-items:center;gap:10px"><button class="back" onclick="try{parent.postMessage({type:'dsjClose'},'*')}catch(e){history.back()}">←</button><div class="toptitle">❤️ 我的收藏</div></div><button class="clearbtn" onclick="if(confirm('确定清空所有收藏？')){fetch('/fav-clear',{method:'POST'}).then(()=>load())}">清空</button></div><div class="list" id="list"></div><div class="tip" id="tip">加载中...</div></div>
+<script>
+function el(s){return document.querySelector(s)}
+function openVod(it){var item=Object.assign({},it);item.url=/^https?:/.test(item.url)?item.url:'https://www.1905dsj.com'+item.url;try{parent.postMessage({type:'dsjDetail',item:item},'*')}catch(e){location.href=item.url}}
+function load(){
+  fetch('/fav-list').then(r=>r.json()).then(j=>{
+    if(!j.ok||!j.items.length){el('#tip').textContent='暂无收藏，快去收藏喜欢的影片吧 ❤️';return}
+    el('#list').innerHTML='';
+    j.items.forEach(function(it){
+      var d=document.createElement('div');d.className='row';
+      d.innerHTML='<div class="sposter"><img loading="lazy" src="'+(it.img||'')+'"></div><div class="sinfo"><div class="sname">'+it.title+'</div><div class="smeta">'+new Date(it.addedAt).toLocaleDateString()+'</div></div><button class="delbtn" data-id="'+it.id+'">✕</button>';
+      d.querySelector('.sposter').onclick=d.querySelector('.sname').onclick=function(){openVod(it)};
+      d.querySelector('.delbtn').onclick=function(e){
+        e.stopPropagation();
+        fetch('/fav-remove?id='+encodeURIComponent(it.id),{method:'POST'}).then(()=>load());
+      };
+      el('#list').appendChild(d);
+    });
+    el('#tip').textContent='共 '+j.items.length+' 部收藏';
+  }).catch(e=>{el('#tip').textContent='加载失败：'+(e.message||e)})
+}
+load();
+<\/script></body></html>`;
+}
+
+// ========== 历史页HTML ==========
+function historyHtml() {
+  return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>观看历史</title>
+<style>
+${COMMON_STYLE}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:4px 0 10px;gap:10px}.back{background:rgba(0,0,0,.4);backdrop-filter:blur(8px);border:0;color:#fff;width:36px;height:36px;border-radius:50%;cursor:pointer;font-size:22px;display:flex;align-items:center;justify-content:center}.toptitle{font-size:16px;font-weight:700}
+.clearbtn{background:rgba(255,71,87,.2);border:1px solid rgba(255,71,87,.4);color:#ff4757;padding:4px 12px;border-radius:16px;font-size:12px;cursor:pointer}
+.title{font-size:18px;font-weight:700;margin:4px 0 14px}.list{display:flex;flex-direction:column;gap:12px}
+.row{display:flex;gap:12px;background:rgba(22,22,40,.58);border-radius:12px;overflow:hidden;border:1px solid rgba(255,255,255,.08);padding:9px;box-shadow:0 4px 16px rgba(0,0,0,.35);transition:transform .15s}
+.row:active{transform:scale(.98)}
+.sposter{position:relative;flex:0 0 112px;width:112px;height:150px;background:#161628;border-radius:9px;overflow:hidden}
+.sposter img{width:100%;height:100%;object-fit:cover;display:block}
+.sinfo{min-width:0;flex:1;display:flex;flex-direction:column;justify-content:center}
+.sname{font-size:16px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.smeta{font-size:12px;color:rgba(255,255,255,.7);margin-top:4px}
+.sepi{font-size:12px;color:#4fc3f7;margin-top:4px}
+.tip{text-align:center;padding:18px;color:rgba(255,255,255,.82);font-size:13px}
+</style></head><body>
+<div class="wrap"><div class="topbar"><div style="display:flex;align-items:center;gap:10px"><button class="back" onclick="try{parent.postMessage({type:'dsjClose'},'*')}catch(e){history.back()}">←</button><div class="toptitle">🕐 观看历史</div></div><button class="clearbtn" onclick="if(confirm('确定清空所有历史？')){fetch('/his-clear',{method:'POST'}).then(()=>load())}">清空</button></div><div class="list" id="list"></div><div class="tip" id="tip">加载中...</div></div>
+<script>
+function el(s){return document.querySelector(s)}
+function openVod(it){var item=Object.assign({},it);item.url=/^https?:/.test(item.url)?item.url:'https://www.1905dsj.com'+item.url;try{parent.postMessage({type:'dsjDetail',item:item},'*')}catch(e){location.href=item.url}}
+function timeAgo(ts){var d=Date.now()-ts;if(d<60000)return'刚刚';if(d<3600000)return Math.floor(d/60000)+'分钟前';if(d<86400000)return Math.floor(d/3600000)+'小时前';if(d<604800000)return Math.floor(d/86400000)+'天前';return new Date(ts).toLocaleDateString()}
+function load(){
+  fetch('/his-list').then(r=>r.json()).then(j=>{
+    if(!j.ok||!j.items.length){el('#tip').textContent='暂无观看历史 🎬';return}
+    el('#list').innerHTML='';
+    j.items.forEach(function(it){
+      var d=document.createElement('div');d.className='row';
+      d.innerHTML='<div class="sposter"><img loading="lazy" src="'+(it.img||'')+'"></div><div class="sinfo"><div class="sname">'+it.title+'</div>'+(it.episode?'<div class="sepi">▶ '+it.episode+'</div>':'')+'<div class="smeta">'+timeAgo(it.lastWatch)+'</div></div>';
+      d.onclick=function(){openVod(it)};
+      el('#list').appendChild(d);
+    });
+    el('#tip').textContent='共 '+j.items.length+' 条记录';
+  }).catch(e=>{el('#tip').textContent='加载失败：'+(e.message||e)})
+}
+load();
+<\/script></body></html>`;
+}
+
 // ========== 搜索页HTML ==========
 function searchHtml(wd) {
   return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
@@ -402,6 +544,7 @@ io.observe(el('#tip'));load();
 function tmdbPageHtml(d, vodUrl, fallbackImg) {
   const fullUrl = vodUrl && !/^https?:/.test(vodUrl) ? 'https://www.1905dsj.com' + vodUrl : vodUrl;
   const bgImg = d.backdrop || fallbackImg || '';
+  const img = fallbackImg || '';
   const gTags = d.genres.map(g=>`<span class=tag>${esc(g)}</span>`).join('');
   const rt = d.rating>0?`<span class=rtag>⭐ ${d.rating.toFixed(1)}</span>`:'';
   const yr = d.year?`<span class=tag>${d.year}</span>`:'';
@@ -435,6 +578,7 @@ function tmdbPageHtml(d, vodUrl, fallbackImg) {
 @keyframes gradientMove{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}.info .sub { display: none; }.info .tags{display:flex;flex-wrap:wrap;gap:6px}
 .tag{padding:3px 10px;border-radius:14px;font-size:11px;background:rgba(79,195,247,.15);color:#4fc3f7;border:1px solid rgba(79,195,247,.3)}.rtag{padding:3px 10px;border-radius:14px;font-size:12px;font-weight:700;background:rgba(255,193,7,.15);color:#ffc107;border:1px solid rgba(255,193,7,.3)}
 .play{display:block;margin:18px auto 0;width:calc(100% - 32px);max-width:400px;padding:14px;background:rgba(255,255,255,.15);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.25);border-radius:24px;color:#fff;font-size:17px;font-weight:700;cursor:pointer}.play:active{transform:scale(.97)}
+.favbtn{display:block;margin:10px auto 0;width:calc(100% - 32px);max-width:400px;padding:12px;background:rgba(255,255,255,.15);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.25);border-radius:24px;color:#fff;font-size:15px;font-weight:600;cursor:pointer;transition:all .2s}.favbtn:active{transform:scale(.97)}
 .sec{padding:20px 16px 0}.sh{font-size:15px;font-weight:700;margin-bottom:10px}
 .desc{font-size:13px;color:rgba(224,224,224,.78);line-height:1.7;white-space:pre-line}
 .desc.collapsed{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;white-space:normal}
@@ -447,7 +591,11 @@ function tmdbPageHtml(d, vodUrl, fallbackImg) {
 <div class=bg>${bgImg?'<img src="'+bgImg+'">':''}<div class=fade></div></div>
 <div class=topbar><button class=nbtn onclick="try{parent.postMessage({type:'dsjClose'},'*')}catch(e){history.back()}">←</button></div>
 <div class=content><div class=hero><div class=info><div class=t>${esc(d.title)}</div><div class=sub>${esc(d.originalTitle)}</div><div class=tags>${yr}${rm}${ss}${gTags}${rt}</div></div></div>
-<button class=play onclick="try{parent.postMessage({type:'dsjPlay',url:'${fullUrl.replace(/'/g, "\\'")}'},'*')}catch(e){window.open('${fullUrl.replace(/'/g, "\\'")}','_blank')}">▶ 进入播放</button>
+<div style="display:flex;gap:10px;margin:18px auto 0;width:calc(100% - 32px);max-width:400px">
+<button class=play style="flex:1;margin:0" onclick="try{parent.postMessage({type:'dsjPlay',url:'${fullUrl.replace(/'/g, "\\'")}'},'*')}catch(e){window.open('${fullUrl.replace(/'/g, "\\'")}','_blank')}">▶ 播放</button>
+<a class=favlink href="/fav-add-redirect?title=${encodeURIComponent(d.title)}&url=${encodeURIComponent(fullUrl)}&img=${encodeURIComponent(img||'')}" style="flex:0 0 auto;padding:14px 16px;background:rgba(255,255,255,.15);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.25);border-radius:24px;color:#fff;font-size:13px;font-weight:600;cursor:pointer;text-align:center;text-decoration:none;margin:0;white-space:nowrap">❤️ 收藏</a>
+<a href="/history" style="flex:0 0 auto;padding:14px 16px;background:rgba(255,255,255,.15);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.25);border-radius:24px;color:#fff;font-size:13px;font-weight:600;cursor:pointer;text-align:center;text-decoration:none;margin:0;white-space:nowrap">🕐 历史</a>
+</div>
 ${overviewHtml}
 ${castHtml?'<div class=sec><div class=sh>主演</div><div class=clist>'+castHtml+'</div></div>':''}
 </div><button class=fbtn onclick="try{parent.postMessage({type:'dsjClose'},'*')}catch(e){history.back()}">\u2190</button></body></html>`;
@@ -611,6 +759,9 @@ const server = http.createServer((req, res) => {
     const title = u.searchParams.get('title') || '';
     const vodUrl = u.searchParams.get('url') || '';
     const img = u.searchParams.get('img') || '';
+    // 自动记录观看历史
+    const fullVodUrl = vodUrl && !/^https?:/.test(vodUrl) ? 'https://www.1905dsj.com' + vodUrl : vodUrl;
+    hisAdd({ id: fullVodUrl.replace(/[^a-zA-Z0-9]/g, '_'), title, url: fullVodUrl, img, source: '1905dsj' });
     const clean = title.replace(/\(?\d{4}\)?$/,'').replace(/第\d+集$/,'').trim();
     const searchUrl = `${TMDB_BASE}/search/multi?api_key=${TMDB_KEY}&language=zh-CN&query=${encodeURIComponent(clean)}&include_adult=false&page=1`;
     return fetchPage(searchUrl, (err, text) => {
@@ -746,6 +897,85 @@ loadMore();
         send(res, 200, html, 'text/html; charset=utf-8');
       } catch (err) { send(res, 500, 'parse error'); }
     });
+  }
+
+  // ========== 收藏 & 历史 API ==========
+  if (path === '/fav-add') {
+    let body = '';
+    req.on('data', c => body += c);
+    req.on('end', () => {
+      try { const item = JSON.parse(body); send(res, 200, JSON.stringify(favAdd(item)), 'application/json'); }
+      catch(e) { send(res, 400, '{"ok":false}'); }
+    });
+    return;
+  }
+
+  if (path === '/fav-remove') {
+    if (req.method === 'POST') {
+      let body = '';
+      req.on('data', c => body += c);
+      req.on('end', () => {
+        try {
+          const id = new URL('http://0.0.0.0?' + body).searchParams.get('id') || u.searchParams.get('id') || '';
+          send(res, 200, JSON.stringify(favRemove(id)), 'application/json');
+        } catch(e) { send(res, 400, '{"ok":false}'); }
+      });
+      return;
+    }
+    const id = u.searchParams.get('id') || '';
+    return send(res, 200, JSON.stringify(favRemove(id)), 'application/json');
+  }
+
+  if (path === '/fav-list') {
+    return send(res, 200, JSON.stringify({ ok: true, items: favList() }), 'application/json');
+  }
+
+  if (path === '/fav-check') {
+    const id = u.searchParams.get('id') || '';
+    return send(res, 200, JSON.stringify({ faved: favCheck(id) }), 'application/json');
+  }
+
+  if (path === '/his-add') {
+    let body = '';
+    req.on('data', c => body += c);
+    req.on('end', () => {
+      try { const item = JSON.parse(body); send(res, 200, JSON.stringify(hisAdd(item)), 'application/json'); }
+      catch(e) { send(res, 400, '{"ok":false}'); }
+    });
+    return;
+  }
+
+  if (path === '/his-list') {
+    return send(res, 200, JSON.stringify({ ok: true, items: hisList() }), 'application/json');
+  }
+
+  if (path === '/his-clear') {
+    return send(res, 200, JSON.stringify(hisClear()), 'application/json');
+  }
+
+  if (path === '/fav-clear') {
+    writeJSON(FAV_FILE, []);
+    return send(res, 200, JSON.stringify({ ok: true }), 'application/json');
+  }
+
+  if (path === '/fav-add-redirect') {
+    const title = u.searchParams.get('title') || '';
+    const url = u.searchParams.get('url') || '';
+    const img = u.searchParams.get('img') || '';
+    const id = url.replace(/[^a-zA-Z0-9]/g, '_');
+    favAdd({ id, title, url, img, source: '1905dsj' });
+    res.writeHead(302, { 'Location': '/favorites' });
+    return res.end();
+  }
+
+  // 收藏页
+  if (path === '/favorites') {
+    return send(res, 200, favoritesHtml(), 'text/html; charset=utf-8');
+  }
+
+  // 历史页
+  if (path === '/history') {
+    return send(res, 200, historyHtml(), 'text/html; charset=utf-8');
   }
 
   send(res, 404, 'Not Found');
