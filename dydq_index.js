@@ -881,7 +881,8 @@ const server = http.createServer((req, res) => {
           title: w.title || w.name || '',
           poster: w.poster_path ? IMG + w.poster_path : '',
           rating: w.vote_average ? w.vote_average.toFixed(1) : '',
-          media_type: w.media_type
+          media_type: w.media_type,
+          character: w.character
         })));
         const html = `<!doctype html><html><head><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><title>${esc(name)}</title>
 <style>
@@ -925,7 +926,15 @@ function addWork(w){
   var d=document.createElement('div');d.className='pwi';
   var img=w.poster?'<img src="'+w.poster+'" loading=lazy>':'<div style="width:100%;aspect-ratio:2/3;background:#222"></div>';
   var safeT=w.title.replace(/'/g,"\\'");
-  d.innerHTML=img+'<div class=pwt>'+w.title+'</div>'+(w.rating?'<div class=pwr>\u2b50 '+w.rating+'</div>':'');
+  var charHtml = w.character ? '<div style="font-size:9px;color:rgba(255,255,255,0.6);padding:0 6px 4px;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">饰演：' + w.character + '</div>' : '';
+var metaHtml = '';
+if (w.rating || w.character) {
+  metaHtml = '<div style="display:flex;justify-content:space-between;align-items:center;padding:0 6px 4px;font-size:10px;color:rgba(255,255,255,0.7);">';
+  if (w.rating) metaHtml += '<span>⭐ ' + w.rating + '</span>';
+  if (w.character) metaHtml += '<span style="color:rgba(255,255,255,0.5);font-size:9px;">饰演：' + w.character + '</span>';
+  metaHtml += '</div>';
+}
+d.innerHTML = img + '<div class=pwt>' + w.title + '</div>' + metaHtml;
   d.onclick=function(){parent.postMessage({type:'dsjSearch',query:safeT},'*')};
   el('#works').appendChild(d);
 }
