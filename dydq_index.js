@@ -449,7 +449,7 @@ function favoritesHtml() {
 <style>
 ${COMMON_STYLE}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-.topbar{display:flex;align-items:center;padding:4px 0 10px;gap:10px}.back{background:rgba(0,0,0,.4);backdrop-filter:blur(8px);border:0;color:#fff;width:36px;height:36px;border-radius:50%;cursor:pointer;font-size:22px;display:flex;align-items:center;justify-content:center}.toptitle{font-size:16px;font-weight:700}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:4px 0 10px;gap:10px}.back{background:rgba(0,0,0,.4);backdrop-filter:blur(8px);border:0;color:#fff;width:36px;height:36px;border-radius:50%;cursor:pointer;font-size:22px;display:flex;align-items:center;justify-content:center}.toptitle{font-size:16px;font-weight:700}
 .title{font-size:18px;font-weight:700;margin:4px 0 14px}.list{display:flex;flex-direction:column;gap:12px}
 .row{display:flex;gap:12px;background:rgba(255,255,255,.06);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-radius:16px;overflow:hidden;border:1px solid rgba(255,255,255,.1);padding:10px;box-shadow:0 8px 24px rgba(0,0,0,.3),inset 0 1px 0 rgba(255,255,255,.06);transition:transform .15s;position:relative}.row:active{transform:scale(.98)}.sposter{position:relative;flex:0 0 80px;width:80px;height:110px;border-radius:12px;overflow:hidden}.sposter img{width:100%;height:100%;object-fit:cover;display:block}
 .sinfo{min-width:0;flex:1;display:flex;flex-direction:column;justify-content:center}
@@ -466,7 +466,11 @@ function el(s){return document.querySelector(s)}
 function openVod(it){var item=Object.assign({},it);item.url=/^https?:/.test(item.url)?item.url:'https://www.1905dsj.com'+item.url;try{parent.postMessage({type:'dsjDetail',item:item},'*')}catch(e){location.href=item.url}}
 function load(){
   fetch('/fav-list').then(r=>r.json()).then(j=>{
-    if(!j.ok||!j.items.length){el('#tip').textContent='暂无收藏，快去收藏喜欢的影片吧 ❤️';return}
+    if(!j.ok||!j.items.length){
+  el('#list').innerHTML = '';  // 清空列表
+  el('#tip').textContent='暂无收藏，快去收藏喜欢的影片吧 ❤️';
+  return;
+}
     el('#list').innerHTML='';
     j.items.forEach(function(it){
       var d=document.createElement('div');d.className='row';
@@ -495,11 +499,13 @@ ${COMMON_STYLE}
 .topbar{display:flex;align-items:center;justify-content:space-between;padding:4px 0 10px;gap:10px}.back{background:rgba(0,0,0,.4);backdrop-filter:blur(8px);border:0;color:#fff;width:36px;height:36px;border-radius:50%;cursor:pointer;font-size:22px;display:flex;align-items:center;justify-content:center}.toptitle{font-size:16px;font-weight:700}
 .clearbtn{background:rgba(255,71,87,.2);border:1px solid rgba(255,71,87,.4);color:#ff4757;padding:4px 12px;border-radius:16px;font-size:12px;cursor:pointer}
 .title{font-size:18px;font-weight:700;margin:4px 0 14px}.list{display:flex;flex-direction:column;gap:12px}
-.row{display:flex;gap:12px;background:rgba(255,255,255,.06);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-radius:16px;overflow:hidden;border:1px solid rgba(255,255,255,.1);padding:10px;box-shadow:0 8px 24px rgba(0,0,0,.3),inset 0 1px 0 rgba(255,255,255,.06);transition:transform .15s}.row:active{transform:scale(.98)}.sposter{position:relative;flex:0 0 80px;width:80px;height:110px;border-radius:12px;overflow:hidden}.sposter img{width:100%;height:100%;object-fit:cover;display:block}
+.row{display:flex;gap:12px;background:rgba(255,255,255,.06);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-radius:16px;overflow:hidden;border:1px solid rgba(255,255,255,.1);padding:10px;box-shadow:0 8px 24px rgba(0,0,0,.3),inset 0 1px 0 rgba(255,255,255,.06);transition:transform .15s;position:relative}.row:active{transform:scale(.98)}.sposter{position:relative;flex:0 0 80px;width:80px;height:110px;border-radius:12px;overflow:hidden}.sposter img{width:100%;height:100%;object-fit:cover;display:block}
 .sinfo{min-width:0;flex:1;display:flex;flex-direction:column;justify-content:center}
 .sname{font-size:16px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .smeta{font-size:12px;color:rgba(255,255,255,.7);margin-top:4px}
 .sepi{font-size:12px;color:#4fc3f7;margin-top:4px}
+.delbtn{position:absolute;top:8px;right:8px;background:rgba(255,71,87,.8);border:0;color:#fff;width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .2s}
+.row:hover .delbtn,.row:active .delbtn,.row.show-del .delbtn{opacity:1}
 .tip{text-align:center;padding:18px;color:rgba(255,255,255,.82);font-size:13px}
 </style></head><body>
 <div class="wrap"><div class="topbar"><div style="display:flex;align-items:center;gap:10px"><button class="back" onclick="history.back()">←</button><div class="toptitle">🕐 观看历史</div></div><button class="clearbtn" onclick="if(confirm('确定清空所有历史？')){fetch('/his-clear',{method:'POST'}).then(()=>load())}">清空</button></div><div class="list" id="list"></div><div class="tip" id="tip">加载中...</div></div>
@@ -509,12 +515,47 @@ function openVod(it){var item=Object.assign({},it);item.url=/^https?:/.test(item
 function timeAgo(ts){var d=Date.now()-ts;if(d<60000)return'刚刚';if(d<3600000)return Math.floor(d/60000)+'分钟前';if(d<86400000)return Math.floor(d/3600000)+'小时前';if(d<604800000)return Math.floor(d/86400000)+'天前';return new Date(ts).toLocaleDateString()}
 function load(){
   fetch('/his-list').then(r=>r.json()).then(j=>{
-    if(!j.ok||!j.items.length){el('#tip').textContent='暂无观看历史 🎬';return}
+    if(!j.ok||!j.items.length){
+  el('#list').innerHTML = '';  // 清空列表
+  el('#tip').textContent='暂无观看历史 🎬';
+  return;
+}
     el('#list').innerHTML='';
     j.items.forEach(function(it){
       var d=document.createElement('div');d.className='row';
-      d.innerHTML='<div class="sposter"><img loading="lazy" src="'+(it.img||'')+'"></div><div class="sinfo"><div class="sname">'+it.title+'</div>'+(it.episode?'<div class="sepi">▶ '+it.episode+'</div>':'')+'<div class="smeta">'+timeAgo(it.lastWatch)+'</div></div>';
-      d.onclick=function(){openVod(it)};
+      d.innerHTML='<div class="sposter"><img loading="lazy" src="'+(it.img||'')+'"></div><div class="sinfo"><div class="sname">'+it.title+'</div>'+(it.episode?'<div class="sepi">▶ '+it.episode+'</div>':'')+'<div class="smeta">'+timeAgo(it.lastWatch)+'</div></div><button class="delbtn" data-id="'+it.id+'">✕</button>';
+      d.querySelector('.sposter').onclick=d.querySelector('.sname').onclick=function(){openVod(it)};
+      d.querySelector('.delbtn').onclick=function(e){
+        e.stopPropagation();
+        if(confirm('确定删除这条历史记录吗？')){
+          fetch('/his-remove?id='+encodeURIComponent(it.id),{method:'POST'}).then(()=>load());
+        }
+      };
+      var longPressTimer=null;
+      d.addEventListener('touchstart',function(e){
+        longPressTimer=setTimeout(function(){
+          d.classList.toggle('show-del');
+          longPressTimer=null;
+        },600);
+      });
+      d.addEventListener('touchend',function(){
+        if(longPressTimer){clearTimeout(longPressTimer);longPressTimer=null;}
+      });
+      d.addEventListener('touchmove',function(){
+        if(longPressTimer){clearTimeout(longPressTimer);longPressTimer=null;}
+      });
+      d.addEventListener('mousedown',function(e){
+        longPressTimer=setTimeout(function(){
+          d.classList.toggle('show-del');
+          longPressTimer=null;
+        },600);
+      });
+      d.addEventListener('mouseup',function(){
+        if(longPressTimer){clearTimeout(longPressTimer);longPressTimer=null;}
+      });
+      d.addEventListener('mouseleave',function(){
+        if(longPressTimer){clearTimeout(longPressTimer);longPressTimer=null;}
+      });
       el('#list').appendChild(d);
     });
     el('#tip').textContent='共 '+j.items.length+' 条记录';
@@ -958,6 +999,26 @@ loadMore();
   if (path === '/his-clear') {
     return send(res, 200, JSON.stringify(hisClear()), 'application/json');
   }
+
+if (path === '/his-remove') {
+  if (req.method === 'POST') {
+    let body = '';
+    req.on('data', c => body += c);
+    req.on('end', () => {
+      try {
+        const id = new URL('http://0.0.0.0?' + body).searchParams.get('id') || u.searchParams.get('id') || '';
+        const list = hisList().filter(h => h.id !== id);
+        writeJSON(HIS_FILE, list);
+        send(res, 200, JSON.stringify({ ok: true }), 'application/json');
+      } catch(e) { send(res, 400, '{"ok":false}'); }
+    });
+    return;
+  }
+  const id = u.searchParams.get('id') || '';
+  const list = hisList().filter(h => h.id !== id);
+  writeJSON(HIS_FILE, list);
+  send(res, 200, JSON.stringify({ ok: true }), 'application/json');
+}
 
   if (path === '/fav-clear') {
     writeJSON(FAV_FILE, []);
