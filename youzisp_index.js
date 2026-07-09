@@ -1424,7 +1424,7 @@ _updateAutoNextBtn();
 window.addEventListener('beforeunload',function(){_clearAutoNext()});
 // ===== 双击快进/快退 10秒 =====
 var lastTapTime=0;
-document.getElementById('playerWrap').addEventListener('click',function(e){var now=Date.now();var rect=this.getBoundingClientRect();var x=e.clientX-rect.left;var w=rect.width;if(now-lastTapTime<300){if(x<w*0.35){video.currentTime=Math.max(0,video.currentTime-10)}else if(x>w*0.65){video.currentTime=Math.min(video.duration||0,video.currentTime+10)}else{video.paused?video.play():video.pause()}lastTapTime=0;showControls()}else{lastTapTime=now;setTimeout(function(){if(lastTapTime===now){showControls();if(video.paused){video.play()}else{video.pause()}}},310)}});
+document.getElementById('playerWrap').addEventListener('click',function(e){if(e.target.closest('button,input,.controls,.fs-topbar,.fs-ep-panel,.auto-next,.ep-bar,.src-bar,.progress,.loading-overlay'))return;var now=Date.now();var rect=this.getBoundingClientRect();var x=e.clientX-rect.left;var w=rect.width;if(now-lastTapTime<300){if(x<w*0.35){video.currentTime=Math.max(0,video.currentTime-10)}else if(x>w*0.65){video.currentTime=Math.min(video.duration||0,video.currentTime+10)}else{video.paused?video.play():video.pause()}lastTapTime=0;showControls()}else{lastTapTime=now;setTimeout(function(){if(lastTapTime===now){showControls();if(video.paused){video.play()}else{video.pause()}}},310)}});
 // ===== 上下滑动手势：上滑下一集 / 下滑上一集 =====
 (function(){
   var pw=document.getElementById('playerWrap');if(!pw)return;
