@@ -1518,8 +1518,9 @@ document.addEventListener("touchend",function(){volDragging=false});
 function setVol(e){var r=volBar.getBoundingClientRect();var pct=Math.max(0,Math.min(1,(e.clientX-r.left)/r.width));v.volume=pct;v.muted=false;volFill.style.width=pct*100+"%";volDot.style.right=(100-pct*100)+"%";lastVol=pct;volIcon.textContent=pct===0?"🔇":pct<0.5?"🔉":"🔊"}
 volIcon.onclick=function(){if(v.muted||v.volume===0){v.muted=false;v.volume=lastVol||1;volFill.style.width=(lastVol||1)*100+"%";volDot.style.right=(100-(lastVol||1)*100)+"%";volIcon.textContent="🔊"}else{lastVol=v.volume;v.muted=true;volFill.style.width="0%";volDot.style.right="100%";volIcon.textContent="🔇"}};
 document.getElementById("fsBtn").onclick=function(e){e.stopPropagation();var de=document.documentElement;if(!document.fullscreenElement&&!document.webkitFullscreenElement){if(de.requestFullscreen)de.requestFullscreen();else if(de.webkitRequestFullscreen)de.webkitRequestFullscreen()}else{if(document.exitFullscreen)document.exitFullscreen();else if(document.webkitExitFullscreen)document.webkitExitFullscreen()}};
-function destroyHls(){if(h){try{h.destroy()}catch(e){}h=null}}
-function playUrl(url){destroyHls();if(loadingEl){loadingEl.style.display="flex";loadingEl.style.pointerEvents="none";loadingEl.innerHTML='<div class="spinner"></div><div class="load-text" id="loadText">正在加载...</div>'}v.muted=true;v.removeAttribute("src");v.load();var useProxy=true;var playUrlFinal=useProxy?LP+encodeURIComponent(url):url;var _ltEl=document.getElementById("loadText");if(typeof Hls!=="undefined"&&Hls.isSupported()){h=new Hls({liveSyncDurationCount:3,liveMaxLatencyDurationCount:6,maxBufferLength:10,maxMaxBufferLength:20,maxBufferHole:0.5,enableWorker:true,lowLatencyMode:true,backBufferLength:10,startLevel:-1,startFragPrefetch:true,fragLoadingRetry:6,fragLoadingMaxRetryTimeout:64000,manifestLoadingRetry:3,levelLoadingRetry:3,xhrSetup:function(x){x.withCredentials=false}});h.loadSource(playUrlFinal);h.attachMedia(v);h.on(Hls.Events.MANIFEST_PARSED,function(){_liveAutoPlay()});h.on(Hls.Events.FRAG_LOADED,function(e,d){if(!d||!d.frag||!_ltEl)return;var stats=d.frag.stats||{};var loaded=d.frag.loaded||(stats.total?stats.total:0);if(!loaded)return;var t1=stats.loading?stats.loading.start:0;var t2=stats.loading?stats.loading.end:0;if(!t1||!t2)return;var _kb=Math.round(loaded/1024);var _sec=(t2-t1)/1000;if(_sec<=0)return;var _kbs=Math.round(_kb/_sec);if(_kbs>0)_ltEl.textContent=_kbs>=1024?(_kbs/1024).toFixed(1)+" MB/s":_kbs+" KB/s"});h.on(Hls.Events.ERROR,function(e,d){if(d.fatal){if(d.type===Hls.ErrorTypes.NETWORK_ERROR){destroyHls();try{v.src=playUrlFinal;v.addEventListener("loadedmetadata",function(){_liveAutoPlay()},{once:true})}catch(e2){}}else if(d.type===Hls.ErrorTypes.MEDIA_ERROR){h.recoverMediaError()}else{destroyHls();try{v.src=playUrlFinal}catch(e2){}}}})}else{v.src=playUrlFinal;v.addEventListener("loadedmetadata",function(){_liveAutoPlay()},{once:true})}}
+var _mp4ProgTimer=null;
+function destroyHls(){if(h){try{h.destroy()}catch(e){}h=null}if(_mp4ProgTimer){clearInterval(_mp4ProgTimer);_mp4ProgTimer=null}}
+function playUrl(url){destroyHls();if(loadingEl){loadingEl.style.display="flex";loadingEl.style.pointerEvents="none";loadingEl.innerHTML='<div class="spinner"></div><div class="load-text" id="loadText">正在加载...</div>'}v.muted=true;v.removeAttribute("src");v.load();var useProxy=true;var playUrlFinal=useProxy?LP+encodeURIComponent(url):url;var _ltEl=document.getElementById("loadText");var _rawUrl=(url||"").toLowerCase();var _isMp4=_rawUrl.indexOf(".mp4")>-1||_rawUrl.indexOf(".mkv")>-1||_rawUrl.indexOf(".flv")>-1||_rawUrl.indexOf(".avi")>-1;if(_isMp4){v.preload="auto";v.src=playUrlFinal;var _mp4Started=false;var _onCanPlay=function(){if(_mp4Started)return;_mp4Started=true;_liveAutoPlay()};v.addEventListener("canplay",_onCanPlay,{once:true});v.addEventListener("loadedmetadata",function(){if(_ltEl&&v.duration&&isFinite(v.duration)){_ltEl.textContent="准备播放..."}},{once:true});_mp4ProgTimer=setInterval(function(){if(v.buffered&&v.buffered.length>0&&v.duration&&isFinite(v.duration)){var bf=Math.round(v.buffered.end(v.buffered.length-1)/v.duration*100);if(_ltEl)_ltEl.textContent="缓冲中 "+bf+"%";if(bf>=3&&!_mp4Started){_mp4Started=true;_liveAutoPlay()}}},300);setTimeout(function(){if(!_mp4Started){_mp4Started=true;if(v.readyState>=2){_liveAutoPlay()}else{v.play().catch(function(){})}}},8000)}else if(typeof Hls!=="undefined"&&Hls.isSupported()){h=new Hls({liveSyncDurationCount:3,liveMaxLatencyDurationCount:6,maxBufferLength:10,maxMaxBufferLength:20,maxBufferHole:0.5,enableWorker:true,lowLatencyMode:true,backBufferLength:10,startLevel:-1,startFragPrefetch:true,fragLoadingRetry:6,fragLoadingMaxRetryTimeout:64000,manifestLoadingRetry:3,levelLoadingRetry:3,xhrSetup:function(x){x.withCredentials=false}});h.loadSource(playUrlFinal);h.attachMedia(v);h.on(Hls.Events.MANIFEST_PARSED,function(){_liveAutoPlay()});h.on(Hls.Events.FRAG_LOADED,function(e,d){if(!d||!d.frag||!_ltEl)return;var stats=d.frag.stats||{};var loaded=d.frag.loaded||(stats.total?stats.total:0);if(!loaded)return;var t1=stats.loading?stats.loading.start:0;var t2=stats.loading?stats.loading.end:0;if(!t1||!t2)return;var _kb=Math.round(loaded/1024);var _sec=(t2-t1)/1000;if(_sec<=0)return;var _kbs=Math.round(_kb/_sec);if(_kbs>0)_ltEl.textContent=_kbs>=1024?(_kbs/1024).toFixed(1)+" MB/s":_kbs+" KB/s"});h.on(Hls.Events.ERROR,function(e,d){if(d.fatal){if(d.type===Hls.ErrorTypes.NETWORK_ERROR){destroyHls();try{v.src=playUrlFinal;v.addEventListener("loadedmetadata",function(){_liveAutoPlay()},{once:true})}catch(e2){}}else if(d.type===Hls.ErrorTypes.MEDIA_ERROR){h.recoverMediaError()}else{destroyHls();try{v.src=playUrlFinal}catch(e2){}}}})}else{v.src=playUrlFinal;v.addEventListener("loadedmetadata",function(){_liveAutoPlay()},{once:true})}}
 function showRoutePanel(){var old=document.getElementById("routeOverlay");if(old){old.remove();return}var ov=document.createElement("div");ov.className="route-overlay";ov.id="routeOverlay";
 ov.innerHTML='<div class="route-bg"></div><div class="route-panel"><div class="route-header"><span class="rh-title">线路('+allUrls.length+')</span><button class="rh-close" id="rhClose">✕</button></div><div class="route-list" id="routeList"></div></div>';
 document.body.appendChild(ov);
@@ -1534,6 +1535,7 @@ if(allUrls.length>1){routeBtn.style.display="flex";routeBtn.textContent="\uD83D\
 var hideTimer=null;
 function showControls(){topbar.classList.remove("hide");ctrlbar.classList.remove("hide");if(hideTimer)clearTimeout(hideTimer);hideTimer=setTimeout(function(){if(!v.paused){topbar.classList.add("hide");ctrlbar.classList.add("hide")}},3000)}
 function hideControlsNow(){topbar.classList.add("hide");ctrlbar.classList.add("hide");if(hideTimer)clearTimeout(hideTimer)}
+function _liveToast(msg){var t=document.createElement('div');t.textContent=msg;t.style.cssText='position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(0,0,0,.85);color:#fff;padding:10px 22px;border-radius:10px;font-size:13px;z-index:999;pointer-events:none;transition:opacity .3s';document.body.appendChild(t);setTimeout(function(){t.style.opacity='0';setTimeout(function(){t.remove()},300)},1000)}
 showControls();
 /* ========== 单击切换显示控制栏、双击暂停/播放 ========== */
 var lastTapTime=0,singleTapTimer=null;
@@ -1548,7 +1550,7 @@ function _prevChannel(){if(channelList.length<=1)return;var prev=channelIdx-1;if
 /* ========== 触摸/点击事件绑定（绑定到document，确保loading等遮罩层也能响应滑动） ========== */
 function _isUIEl(t){return t.closest('#routeOverlay,#ctrlbar,#topbar,.route-btn,.route-overlay')}
 document.addEventListener("touchstart",function(e){if(_isUIEl(e.target))return;if(e.touches.length===1){swipeStartY=e.touches[0].clientY;swipeStartX=e.touches[0].clientX;swipeActive=true;swipeTriggered=false}},{passive:true});
-document.addEventListener("touchmove",function(e){if(!swipeActive||e.touches.length!==1)return;var dy=e.touches[0].clientY-swipeStartY;var dx=e.touches[0].clientX-swipeStartX;if(!swipeTriggered&&Math.abs(dy)>60&&Math.abs(dy)>Math.abs(dx)*1.5){swipeTriggered=true;swipeActive=false;if(dy<0){_nextChannel()}else{_prevChannel()}}},{passive:true});
+document.addEventListener("touchmove",function(e){if(!swipeActive||e.touches.length!==1)return;var dy=e.touches[0].clientY-swipeStartY;var dx=e.touches[0].clientX-swipeStartX;if(!swipeTriggered&&Math.abs(dy)>60&&Math.abs(dy)>Math.abs(dx)*1.5){swipeTriggered=true;swipeActive=false;if(dy<0){_nextChannel()}else{_prevChannel()}}if(!swipeTriggered&&v.duration&&isFinite(v.duration)&&Math.abs(dx)>60&&Math.abs(dx)>Math.abs(dy)*1.5){swipeTriggered=true;swipeActive=false;var sec=Math.min(120,Math.round(Math.abs(dx)/20)*10);if(dx>0){v.currentTime=Math.min(v.duration,v.currentTime+sec);_liveToast('快进'+sec+'秒')}else{v.currentTime=Math.max(0,v.currentTime-sec);_liveToast('快退'+sec+'秒')}showControls()}},{passive:true});
 document.addEventListener("touchend",function(e){if(_isUIEl(e.target)){swipeActive=false;return}swipeActive=false;if(swipeTriggered)return;var now=Date.now();if(now-lastTapTime<300){if(singleTapTimer){clearTimeout(singleTapTimer);singleTapTimer=null}lastTapTime=0;_onDoubleTap()}else{lastTapTime=now;singleTapTimer=setTimeout(function(){_onTap();singleTapTimer=null;lastTapTime=0},300)}},{passive:false});
 document.addEventListener("mousemove",function(){showControls()});
 /* ========== 显示滑动提示（3秒后自动隐藏） ========== */
@@ -1646,6 +1648,7 @@ if(allUrls.length>0)playUrl(allUrls[0]);
     if (!/^https?:\/\//.test(target)) return send(res, 400, 'bad url');
     try {
       var urlObj = new URL(target);
+      var clientReq = req;
       var redirectCount = 0;
       function doFetch(fetchUrl) {
         var fMod = fetchUrl.startsWith('https') ? https : http;
@@ -1655,6 +1658,7 @@ if(allUrls.length>0)playUrl(allUrls[0]);
           agent: fMod === https ? new https.Agent({ keepAlive: true, maxSockets: 10 }) : new http.Agent({ keepAlive: true, maxSockets: 10 }),
           timeout: 15000
         };
+        if (clientReq.headers.range) { fetchOpt.headers['Range'] = clientReq.headers.range; }
         var req = fMod.get(fUrl.href, fetchOpt, function(r) {
           if (r.statusCode >= 300 && r.statusCode < 400 && r.headers.location && redirectCount < 5) {
             redirectCount++;
@@ -1698,12 +1702,16 @@ if(allUrls.length>0)playUrl(allUrls[0]);
             });
             r.on('error', function() { try { res.writeHead(502); res.end('fetch error'); } catch(e) {} });
           } else {
-            // 非 m3u8（ts 分片等），直接 pipe
-            res.writeHead(r.statusCode, {
+            // 非 m3u8（ts/mp4等），直接 pipe，转发关键响应头
+            var respHeaders = {
               'Content-Type': ct || 'application/octet-stream',
               'Access-Control-Allow-Origin': '*',
               'Cache-Control': 'public, max-age=86400'
-            });
+            };
+            if (r.headers['content-range']) respHeaders['Content-Range'] = r.headers['content-range'];
+            if (r.headers['content-length']) respHeaders['Content-Length'] = r.headers['content-length'];
+            if (r.headers['accept-ranges']) respHeaders['Accept-Ranges'] = r.headers['accept-ranges'];
+            res.writeHead(r.statusCode, respHeaders);
             r.pipe(res);
           }
         });
