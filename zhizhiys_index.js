@@ -99,7 +99,9 @@ function hisAdd(item) {
   const id = item.id || (item.url || '').replace(/[^a-zA-Z0-9]/g, '_');
   const exist = list.findIndex(h => h.id === id);
   if (exist >= 0) {
-    // 记录已存在：只更新进度等字段，绝不覆盖title/img/url/source
+    // 记录已存在：更新进度等字段，title/img在非空时覆盖
+    if (item.title) list[exist].title = item.title;
+    if (item.img) list[exist].img = item.img;
     if (item.progress !== undefined) list[exist].progress = item.progress;
     if (item.duration !== undefined) list[exist].duration = item.duration;
     if (item.playUrl !== undefined) list[exist].playUrl = item.playUrl;
@@ -898,7 +900,7 @@ function playFirst(){
       var ep=src.episodes[epIdx];curEpUrl=ep.url;
       var u=ep.url.charAt(0)==='/'?SITE+ep.url:ep.url;
       try{localStorage.setItem('youzi_tmdb_state',JSON.stringify({vodUrl:VOD_URL,curEpUrl:ep.url,curSrc:curSrc}))}catch(e){}
-      try{var _t=document.querySelector('.info .t'),_b=document.querySelector('.bg img'),_hi=document.getElementById('_hi');var _mt=_t&&_t.textContent?_t.textContent:ep.title;sessionStorage.setItem('youzi_tmdb_meta_'+VOD_URL,JSON.stringify({title:_mt,backdrop:_b?_b.src:'',img:_hi?_hi.dataset.img:''}))}catch(e){}
+      try{var _t=document.querySelector('.info .t'),_b=document.querySelector('.bg img'),_hi=document.getElementById('_hi');var _mt=_t&&_t.textContent?_t.textContent:(document.title||ep.title);sessionStorage.setItem('youzi_tmdb_meta_'+VOD_URL,JSON.stringify({title:_mt,backdrop:_b?_b.src:'',img:_hi?_hi.dataset.img:''}))}catch(e){}
       window.location.href='/player?url='+encodeURIComponent(u)+'&title='+encodeURIComponent(ep.title)+'&vod='+encodeURIComponent(VOD_URL);
       return;
     }
@@ -940,7 +942,7 @@ function renderEps(){
       try{localStorage.setItem('youzi_tmdb_state',JSON.stringify({vodUrl:VOD_URL,curEpUrl:ep.url,curSrc:curSrc}))}catch(e){}
       renderEps();
       window.location.href='/player?url='+encodeURIComponent(u)+'&title='+encodeURIComponent(ep.title)+'&vod='+encodeURIComponent(VOD_URL);
-      try{var _bgi=document.querySelector('.bg img'),_hi=document.getElementById('_hi');var _tt=document.querySelector('.info .t'),_mt2=_tt&&_tt.textContent?_tt.textContent:ep.title;sessionStorage.setItem('youzi_tmdb_bg_'+VOD_URL,(_bgi?_bgi.src:''));sessionStorage.setItem('youzi_tmdb_meta_'+VOD_URL,JSON.stringify({title:_mt2,backdrop:_bgi?_bgi.src:'',img:_hi?_hi.dataset.img:''}))}catch(e2){}
+      try{var _bgi=document.querySelector('.bg img'),_hi=document.getElementById('_hi');var _tt=document.querySelector('.info .t'),_mt2=_tt&&_tt.textContent?_tt.textContent:(document.title||ep.title);sessionStorage.setItem('youzi_tmdb_bg_'+VOD_URL,(_bgi?_bgi.src:''));sessionStorage.setItem('youzi_tmdb_meta_'+VOD_URL,JSON.stringify({title:_mt2,backdrop:_bgi?_bgi.src:'',img:_hi?_hi.dataset.img:''}))}catch(e2){}
     };
     grid.appendChild(d)
   });
@@ -1215,9 +1217,9 @@ function _startPlay(url){
     try{var _meta=JSON.parse(sessionStorage.getItem('youzi_tmdb_meta_'+VOD_URL)||'null');if(_meta){_hMovieName=_meta.title||'';_hImg=_meta.img||_meta.backdrop||''}}catch(e2){}
     if(!_hMovieName){try{_hMovieName=sessionStorage.getItem('youzi_tmdb_title_'+VOD_URL)||''}catch(e3){}}
     if(!_hImg){try{_hImg=sessionStorage.getItem('youzi_tmdb_bg_'+VOD_URL)||''}catch(e4){}}
-    var _hTitle=_hMovieName?(MOVIE_TITLE&&MOVIE_TITLE!==_hMovieName?(_hMovieName+' '+MOVIE_TITLE):_hMovieName):(MOVIE_TITLE||'');
+    var _hTitle=_hMovieName||MOVIE_TITLE||'';
     window._hisTitle=_hTitle;window._hisImg=_hImg;
-    fetch('/his-add',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:_hti,title:_hTitle,url:VOD_URL||'',img:_hImg,source:'zzoc.cc',playUrl:PLAY_URL||''})}).catch(function(){})
+    fetch('/his-add',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:_hti,title:_hTitle,url:VOD_URL||'',img:_hImg,source:'zzoc.cc',playUrl:PLAY_URL||'',episode:MOVIE_TITLE||''})}).catch(function(){})
   }catch(e){}
   if(url.indexOf('/vplay/')>-1){
     document.getElementById('sourceInfo').textContent='正在解析...';
@@ -1232,7 +1234,9 @@ function _startPlay(url){
     var _hti=VOD_URL?VOD_URL.replace(/[^a-zA-Z0-9]/g,'_'):'';
     var _epIdx=getCurrentEpIdx();
     if(_epIdx>=0)try{localStorage.setItem('youzi_ep_idx_'+VOD_URL,String(_epIdx))}catch(e){}
-    fetch('/his-add',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:_hti,progress:Math.floor(video.currentTime),duration:Math.floor(video.duration),lastWatch:Date.now(),episode:_epIdx>=0?String(_epIdx):''})}).catch(function(){})
+    var _epTitle='';if(_epIdx>=0){var _src=pSources&&pSources[pCurSrc||0];if(_src&&_src.episodes&&_src.episodes[_epIdx])_epTitle=_src.episodes[_epIdx].title||''}
+    if(!_epTitle)_epTitle=MOVIE_TITLE||'';
+    fetch('/his-add',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:_hti,progress:Math.floor(video.currentTime),duration:Math.floor(video.duration),lastWatch:Date.now(),episode:_epTitle})}).catch(function(){})
   },10000);
 }
 function _playNextEp(){
