@@ -1,11 +1,21 @@
-const http = require('http');   
+const http = require('http');    
 const https = require('https');  
 const { URL } = require('url');
 const fs = require('fs');
 const path = require('path');
 
 const PORT = 9976;
-const SITE = 'https://zzoc.cc';
+const _DEFAULT_SITE = 'https://zzoc.cc';
+const _SITE_CONFIG_FILE = path.join(__dirname, 'data', 'site_url.json');
+
+function _loadSite() {
+  try {
+    const cfg = JSON.parse(fs.readFileSync(_SITE_CONFIG_FILE, 'utf8'));
+    if (cfg.url && /^https?:\/\//.test(cfg.url)) return cfg.url.replace(/\/+$/, '');
+  } catch (e) {}
+  return _DEFAULT_SITE;
+}
+const SITE = _loadSite();
 const TMDB_BASE = 'https://api.tmdb.org/3';
 
 // ========== TMDB Key 三层回退：环境变量 → 配置文件 → 内置默认值 ==========
@@ -45,6 +55,7 @@ function cacheSet(key, val) {
 
 // ========== SSRF 防护 ==========
 const ALLOWED_HOSTS = ['zzoc.cc', 'www.zzoc.cc', 'api.tmdb.org', 'image.tmdb.org', 'images.tmdb.org', 'mov.cenguigui.cn'];
+try { const _sh = new URL(SITE).hostname; if (!ALLOWED_HOSTS.includes(_sh)) ALLOWED_HOSTS.push(_sh); } catch(e) {}
 function isSafeUrl(target) {
   try {
     const u = new URL(target);
@@ -1746,6 +1757,29 @@ const server = http.createServer((req, res) => {
 
   if (req.method === 'OPTIONS') return send(res, 204, '');
   if (pathname === '/health') return send(res, 200, 'ok');
+
+  // 网站地址读写
+  if (pathname === '/site-url') {
+    if (req.method === 'GET') {
+      return send(res, 200, JSON.stringify({ url: SITE }), 'application/json');
+    }
+    if (req.method === 'POST') {
+      var body = '';
+      req.on('data', function(c) { body += c; });
+      req.on('end', function() {
+        try {
+          var data = JSON.parse(body);
+          var newUrl = (data.url || '').trim().replace(/\/+$/, '');
+          if (!newUrl || !/^https?:\/\//.test(newUrl)) return send(res, 400, JSON.stringify({ ok: false, error: 'bad url' }), 'application/json');
+          fs.writeFileSync(_SITE_CONFIG_FILE, JSON.stringify({ url: newUrl }, null, 2), 'utf-8');
+          send(res, 200, JSON.stringify({ ok: true, url: newUrl }), 'application/json');
+        } catch (e) {
+          send(res, 500, JSON.stringify({ ok: false, error: e.message }), 'application/json');
+        }
+      });
+      return;
+    }
+  }
 
   if (pathname === '/shutdown') {
     send(res, 200, 'shutting down');
