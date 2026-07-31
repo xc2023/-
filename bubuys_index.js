@@ -529,6 +529,24 @@ function ensureDataDir() {
   if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
 }
 
+// ========== 本地影片库列表缓存（按 mtime 失效，防大文件 OOM 闪退）==========
+const _localListCache = new Map(); // key: absPath -> {mtime, size, list}
+const LOCAL_MAX_SIZE = 80 * 1024 * 1024; // 单文件超过 80MB 直接拒绝，避免 OOM 闪退
+function getLocalList(absPath) {
+  var st = fs.statSync(absPath);
+  if (st.size > LOCAL_MAX_SIZE) {
+    throw new Error('文件过大（' + (st.size / 1048576).toFixed(1) + 'MB），暂不支持直接打开');
+  }
+  var cached = _localListCache.get(absPath);
+  if (cached && cached.mtime === st.mtimeMs && cached.size === st.size) return cached.list;
+  var raw = JSON.parse(fs.readFileSync(absPath, 'utf8'));
+  var list = raw.list || raw.data || raw || [];
+  if (!Array.isArray(list)) list = [list];
+  if (_localListCache.size > 20) _localListCache.clear(); // 简单防膨胀
+  _localListCache.set(absPath, { mtime: st.mtimeMs, size: st.size, list: list });
+  return list;
+}
+
 function readJSON(file) {
   try { return JSON.parse(fs.readFileSync(file, 'utf8')); } catch(e) { return []; }
 }
@@ -2907,9 +2925,7 @@ window.addEventListener('orientationchange',function(){if(_epgResizeTimer)clearT
         var stat = fs.statSync(fp);
         var count = 0;
         try {
-          var raw = JSON.parse(fs.readFileSync(fp, 'utf8'));
-          var list = raw.list || raw.data || raw || [];
-          if (!Array.isArray(list)) list = [list];
+          var list = getLocalList(fp);
           count = list.length;
         } catch(e) {}
         return { name: f, size: stat.size, count: count };
@@ -2927,9 +2943,7 @@ window.addEventListener('orientationchange',function(){if(_epgResizeTimer)clearT
     if (!filePath) return send(res, 200, JSON.stringify({ok:false,error:'no file param'}));
     const absPath = filePath.charAt(0) === '/' ? filePath : path.join(DATA_DIR, filePath);
     try {
-      var raw = JSON.parse(fs.readFileSync(absPath, 'utf8'));
-      var list = raw.list || raw.data || raw || [];
-      if (!Array.isArray(list)) list = [list];
+      var list = getLocalList(absPath);
       // 按分类过滤
       if (category) {
         list = list.filter(function(v) {
@@ -3001,9 +3015,7 @@ window.addEventListener('orientationchange',function(){if(_epgResizeTimer)clearT
       var allItems = [];
       for (var fi = 0; fi < allFiles.length; fi++) {
         try {
-          var rawF = JSON.parse(fs.readFileSync(path.join(DATA_DIR, allFiles[fi]), 'utf8'));
-          var listF = rawF.list || rawF.data || rawF || [];
-          if (!Array.isArray(listF)) listF = [listF];
+          var listF = getLocalList(path.join(DATA_DIR, allFiles[fi]));
           for (var vi = 0; vi < listF.length; vi++) {
             var v = listF[vi];
             var name = (v.vod_name || '').toLowerCase();
