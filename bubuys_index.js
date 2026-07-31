@@ -6,437 +6,8 @@ const fs = require('fs');
 const path = require('path');
 
 
-// ========== TVBox API ==========
-class TVBoxAPI {
-  constructor(config) {
-    this.host = config.host;
-    this.pkg = config.pkg;
-    this.sk = config.sk;
-    this.finger = config.finger;
-    this.ver = String(config.ver);
-    this.updateId = config.updateId;
-    this.deviceBrand = config.deviceBrand || 'vivo';
-    this.deviceModel = config.deviceModel || 'V2309A';
-    this.deviceId = config.deviceId || this._genId(16);
-    this._headers = { 'User-Agent': 'okhttp/4.12.0' };
-  }
-  _genId(len) {
-    const chars = '0123456789abcdef';
-    let r = '';
-    for (let i = 0; i < len; i++) r += chars[Math.floor(Math.random() * chars.length)];
-    return r;
-  }
-  _genNonce(len, chars) {
-    chars = chars || '0123456789';
-    let r = '';
-    for (let i = 0; i < len; i++) r += chars[Math.floor(Math.random() * chars.length)];
-    return r;
-  }
-  _sha256(s) {
-    var K = [0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5,0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5,0xd807aa98,0x12835b01,0x243185be,0x550c7dc3,0x72be5d74,0x80deb1fe,0x9bdc06a7,0xc19bf174,0xe49b69c1,0xefbe4786,0x0fc19dc6,0x240ca1cc,0x2de92c6f,0x4a7484aa,0x5cb0a9dc,0x76f988da,0x983e5152,0xa831c66d,0xb00327c8,0xbf597fc7,0xc6e00bf3,0xd5a79147,0x06ca6351,0x14292967,0x27b70a85,0x2e1b2138,0x4d2c6dfc,0x53380d13,0x650a7354,0x766a0abb,0x81c2c92e,0x92722c85,0xa2bfe8a1,0xa81a664b,0xc24b8b70,0xc76c51a3,0xd192e819,0xd6990624,0xf40e3585,0x106aa070,0x19a4c116,0x1e376c08,0x2748774c,0x34b0bcb5,0x391c0cb3,0x4ed8aa4a,0x5b9cca4f,0x682e6ff3,0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208,0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2];
-    var H = [0x6a09e667,0xbb67ae85,0x3c6ef372,0xa54ff53a,0x510e527f,0x9b05688c,0x1f83d9ab,0x5be0cd19];
-    var bytes = [];
-    for (var i = 0; i < s.length; i++) {
-      var c = s.charCodeAt(i);
-      if (c < 128) bytes.push(c);
-      else if (c < 2048) { bytes.push(192|(c>>6), 128|(c&63)); }
-      else { bytes.push(224|(c>>12), 128|((c>>6)&63), 128|(c&63)); }
-    }
-    var msgLen = bytes.length;
-    bytes.push(0x80);
-    while (bytes.length % 64 !== 56) bytes.push(0x00);
-    var lenBits = msgLen * 8;
-    for (var i = 56; i >= 0; i -= 8) {
-      bytes.push((lenBits / Math.pow(2, i)) & 0xff);
-    }
-    for (var offset = 0; offset < bytes.length; offset += 64) {
-      var W = new Array(64);
-      for (var i = 0; i < 16; i++) {
-        W[i] = (bytes[offset+i*4] << 24) | (bytes[offset+i*4+1] << 16) | (bytes[offset+i*4+2] << 8) | bytes[offset+i*4+3];
-      }
-      for (var i = 16; i < 64; i++) {
-        var gamma0 = ((W[i-15]>>>7)|(W[i-15]<<25)) ^ ((W[i-15]>>>18)|(W[i-15]<<14)) ^ (W[i-15]>>>3);
-        var gamma1 = ((W[i-2]>>>17)|(W[i-2]<<15)) ^ ((W[i-2]>>>19)|(W[i-2]<<13)) ^ (W[i-2]>>>10);
-        W[i] = (W[i-16] + gamma0 + W[i-7] + gamma1) | 0;
-      }
-      var a = H[0], b = H[1], c = H[2], d = H[3];
-      var e = H[4], f = H[5], g = H[6], h = H[7];
-      for (var i = 0; i < 64; i++) {
-        var Sigma1 = ((e>>>6)|(e<<26)) ^ ((e>>>11)|(e<<21)) ^ ((e>>>25)|(e<<7));
-        var ch = (e & f) ^ (~e & g);
-        var temp1 = (h + Sigma1 + ch + K[i] + W[i]) | 0;
-        var Sigma0 = ((a>>>2)|(a<<30)) ^ ((a>>>13)|(a<<19)) ^ ((a>>>22)|(a<<10));
-        var maj = (a & b) ^ (a & c) ^ (b & c);
-        var temp2 = (Sigma0 + maj) | 0;
-        h = g; g = f; f = e; e = (d + temp1) | 0;
-        d = c; c = b; b = a; a = (temp1 + temp2) | 0;
-      }
-      H[0] = (H[0] + a) | 0; H[1] = (H[1] + b) | 0;
-      H[2] = (H[2] + c) | 0; H[3] = (H[3] + d) | 0;
-      H[4] = (H[4] + e) | 0; H[5] = (H[5] + f) | 0;
-      H[6] = (H[6] + g) | 0; H[7] = (H[7] + h) | 0;
-    }
-    var hex = '';
-    for (var i = 0; i < 8; i++) {
-      var n = H[i];
-      hex += ((n>>>28)&0xf).toString(16) + ((n>>>24)&0xf).toString(16) +
-             ((n>>>20)&0xf).toString(16) + ((n>>>16)&0xf).toString(16) +
-             ((n>>>12)&0xf).toString(16) + ((n>>>8)&0xf).toString(16) +
-             ((n>>>4)&0xf).toString(16) + (n&0xf).toString(16);
-    }
-    return hex;
-  }
-  _sign(api) {
-    var time = Date.now().toString();
-    var nonce = 'F827F098' + this._genNonce(8);
-    var params = { id: this.pkg, time: time, nonce: nonce, v: this.ver, finger: this.finger, sk: this.sk };
-    var keys = Object.keys(params).sort();
-    var signStr = keys.map(function(k) { return k + '=' + params[k]; }).join('&');
-    var sign = this._sha256(signStr).toUpperCase();
-    var headers = Object.assign({}, this._headers, {
-      'Accept': 'application/json',
-      'x-aid': this.pkg,
-      'x-ave': this.ver,
-      'x-time': time,
-      'x-nonc': nonce,
-      'x-sign': sign,
-      'x-device-id': this.deviceId,
-      'x-device-brand': this.deviceBrand,
-      'x-device-model': this.deviceModel,
-      'x-platform': 'android',
-      'x-update-id': this.updateId
-    });
-    return headers;
-  }
-  // decode 接口专用 headers（对齐布布影视.js genHeaders 5个签名header + User-Agent）
-  _decodeHeaders() {
-    var time = Date.now().toString();
-    var nonce = 'F827F098' + this._genNonce(8);
-    var signStr = 'finger=' + this.finger + '&id=' + this.pkg + '&nonce=' + nonce + '&sk=' + this.sk + '&time=' + time + '&v=' + this.ver;
-    var sign = this._sha256(signStr).toUpperCase();
-    return {
-      'User-Agent': 'okhttp/4.12.0',
-      'x-aid': this.pkg,
-      'x-ave': this.ver,
-      'x-time': time,
-      'x-nonc': nonce,
-      'x-sign': sign
-    };
-  }
-  _fetch(url, headers) {
-    var h = headers || this._headers;
-    return new Promise(function(resolve, reject) {
-      var args = ['-s', '--max-time', '15', '-L', '--compressed'];
-      for (var k in h) {
-        if (h[k] !== undefined && h[k] !== null) {
-          args.push('-H', k + ': ' + h[k]);
-        }
-      }
-      args.push(url);
-      execFile('curl', args, { timeout: 20000, maxBuffer: 5 * 1024 * 1024 }, function(err, stdout, stderr) {
-        if (err) {
-          if (err.killed) return reject(new Error('timeout'));
-          return reject(err);
-        }
-        resolve(stdout);
-      });
-    });
-  }
-  async get(api, params) {
-    var url = this.host + api;
-    if (params && Object.keys(params).length > 0) {
-      var qs = Object.keys(params).map(function(k) { return k + '=' + encodeURIComponent(params[k]); }).join('&');
-      url += '?' + qs;
-    }
-    var headers = this._sign(api, params);
-    return await this._fetch(url, headers);
-  }
-  // decode 接口专用（对齐布布影视.js：URL 手动拼接 + genHeaders 精简header）
-  async decodeUrl(url, vodFrom) {
-    var apiUrl = this.host + '/api.php/app/decode/url/?url=' + encodeURIComponent(url) + '&vodFrom=' + vodFrom + '&fro=app';
-    var headers = this._decodeHeaders();
-    return await this._fetch(apiUrl, headers);
-  }
-  async home() {
-    try {
-      var data = await this.get('/api.php/app/index/home');
-      var json = JSON.parse(data);
-      if (json.code !== 200) return { ok: false, error: json.msg, categories: [], lunbos: [], items: [] };
-      var d = json.data || {};
-      var self = this;
-      var self = this;
-      var categories = (d.categories || []).map(function(c) {
-        return { type_id: c.type_id, type_name: c.type_name, videos: (c.videos || []).map(function(v) { return self._fmtVod(v); }) };
-      });
-      var lunbos = (d.recommend || []).slice(0, 8).map(function(v) { return { title: v.vod_name || '', img: v.vod_pic || '', url: '/api/parse-play?vod_id=' + v.vod_id }; });
-      var items = (d.recommend || []).map(function(v) { return self._fmtVod(v); });
-      return { ok: true, categories: categories, lunbos: lunbos, items: items };
-    } catch(e) {
-      console.error('[TVBox] home error:', e.message);
-      return { ok: false, error: e.message, categories: [], lunbos: [], items: [] };
-    }
-  }
-  async category(typeId, page, filters) {
-    try {
-      var params = { type_name: typeId, page: page || 1, limit: 18 };
-      if (filters) { Object.keys(filters).forEach(function(k) { if (filters[k]) params[k] = filters[k]; }); }
-      var data = await this.get('/api.php/app/filter/vod', params);
-      var json = JSON.parse(data);
-      if (json.code !== 200) return { ok: false, error: json.msg, items: [] };
-      var self = this;
-      return { ok: true, items: (json.data || []).map(function(v) { return self._fmtVod(v); }), page: parseInt(page) };
-    } catch(e) {
-      console.error('[TVBox] category error:', e.message);
-      return { ok: false, error: e.message, items: [] };
-    }
-  }
-  async search(wd, page) {
-    try {
-      var data = await this.get('/api.php/app/search/index', { wd: wd, page: page || 1, limit: 15 });
-      var json = JSON.parse(data);
-      if (json.code !== 200) return { ok: false, error: json.msg, items: [] };
-      var self = this;
-      return { ok: true, items: (json.data || []).map(function(v) { return self._fmtVod(v); }), page: parseInt(page) };
-    } catch(e) {
-      console.error('[TVBox] search error:', e.message);
-      return { ok: false, error: e.message, items: [] };
-    }
-  }
-  async rank(page) {
-    try {
-      // 用首页接口获取分类及每个分类下的推荐影片，按分类组装排行榜数据
-      var data = await this.get('/api.php/app/index/home');
-      var json = JSON.parse(data);
-      if (json.code !== 200) return { ok: false, error: json.msg, items: [] };
-      var d = json.data || {};
-      var self = this;
-      var categories = d.categories || [];
-      var items = [];
-      categories.forEach(function(cat) {
-        var catName = cat.type_name || '排行榜';
-        var videos = cat.videos || [];
-        videos.forEach(function(v, i) {
-          var formatted = self._fmtVod(v);
-          var metaParts = [];
-          if (catName) metaParts.push(catName);
-          if (formatted.tag) metaParts.push(formatted.tag);
-          if (formatted.year) metaParts.push(formatted.year);
-          if (formatted.area) metaParts.push(formatted.area);
-          if (formatted.class) metaParts.push(formatted.class);
-          items.push({
-            title: formatted.title,
-            url: formatted.url,
-            img: formatted.img,
-            tag: String(i + 1),
-            top: String(i + 1),
-            note: formatted.tag,
-            desc: formatted.actors || formatted.desc || '',
-            actors: formatted.actors || '',
-            year: formatted.year || '',
-            area: formatted.area || '',
-            type: catName,
-            catTitle: catName,
-            score: '',
-            hits: '',
-            infoTime: '',
-            meta: metaParts.join(' | '),
-            intro: formatted.desc || ''
-          });
-        });
-      });
-      // 如果没有分类数据，退回推荐列表
-      if (!items.length && d.recommend) {
-        d.recommend.forEach(function(v, i) {
-          var formatted = self._fmtVod(v);
-          var metaParts = [];
-          if (formatted.tag) metaParts.push(formatted.tag);
-          if (formatted.year) metaParts.push(formatted.year);
-          if (formatted.area) metaParts.push(formatted.area);
-          if (formatted.class) metaParts.push(formatted.class);
-          items.push({
-            title: formatted.title,
-            url: formatted.url,
-            img: formatted.img,
-            tag: String(i + 1),
-            top: String(i + 1),
-            note: formatted.tag,
-            desc: formatted.actors || '',
-            actors: formatted.actors || '',
-            year: formatted.year || '',
-            area: formatted.area || '',
-            type: '热门排行',
-            catTitle: '热门排行',
-            score: '',
-            hits: '',
-            infoTime: '',
-            meta: metaParts.join(' | '),
-            intro: formatted.desc || ''
-          });
-        });
-      }
-      return { ok: true, items: items, page: 1, finished: true };
-    } catch(e) {
-      console.error('[TVBox] rank error:', e.message);
-      return { ok: false, error: e.message, items: [] };
-    }
-  }
-  async detail(vodId) {
-    try {
-      var data = await this.get('/api.php/app/vod/get_detail', { vod_id: vodId });
-      var json = JSON.parse(data);
-      if (json.code !== 200) return { ok: false, error: json.msg };
-      var vod = (json.data || [])[0] || {};
-      var players = json.vodplayer || [];
-      var froms = (vod.vod_play_from || '').split('$$$');
-      var urls = (vod.vod_play_url || '').split('$$$');
-      var sources = [];
-      for (var i = 0; i < froms.length; i++) {
-        var from = froms[i];
-        var urlStr = urls[i] || '';
-        var pInfo = players.find(function(p) { return p.from === from; }) || {};
-        var eps = urlStr.split('#').filter(function(e) { return e.includes('$'); }).map(function(e) {
-          var parts = e.split('$');
-          return { name: parts[0], url: from + '@@' + (pInfo.decode_status || 0) + '@@' + (pInfo.decode_mode || 'server') + '@@' + encodeURIComponent(pInfo.parse_url || '') + '@@' + parts.slice(1).join('$') };
-        });
-        if (eps.length) sources.push({ name: from, episodes: eps });
-      }
-      // Also get direct URLs from search_aggregate
-      try {
-        var aggData = await this.get('/api.php/app/internal/search_aggregate', { vod_id: vodId });
-        var aggJson = JSON.parse(aggData);
-        var aggList = aggJson.data || [];
-        for (var k = 0; k < aggList.length; k++) {
-          var item = aggList[k];
-          if (!item.site_key || !item.vod_play_url) continue;
-          var eps2 = [];
-          var parts2 = item.vod_play_url.split('#').filter(Boolean);
-          for (var j = 0; j < parts2.length; j++) {
-            var ep2 = parts2[j];
-            var idx2 = ep2.indexOf('$');
-            var title2 = idx2 === -1 ? ep2 : ep2.substring(0, idx2);
-            if (!title2) continue;
-            var url2 = idx2 === -1 ? '' : ep2.substring(idx2 + 1);
-          if (url2) {
-            // 统一 @@ 格式：from=site_key，直链标记2/需解析标记1，使 play() 能调 decode
-            var ds2 = /\.(m3u8|mp4|flv|ts|aac)(\?|$)/i.test(url2) ? '2' : '1';
-            eps2.push({ name: title2, url: item.site_key + '@@' + ds2 + '@@@@@@' + url2 });
-          }
-          }
-          if (eps2.length > 0) sources.push({ name: item.site_name || item.site_key, episodes: eps2 });
-        }
-      } catch(e) {}
-      return { ok: true, vod: { vod_id: vod.vod_id, vod_name: vod.vod_name, vod_pic: vod.vod_pic, vod_year: vod.vod_year, vod_area: vod.vod_area, vod_actor: vod.vod_actor, vod_director: vod.vod_director, vod_content: vod.vod_content, vod_class: vod.vod_class, type_name: vod.type_name }, sources: sources };
-    } catch(e) {
-      console.error('[TVBox] detail error:', e.message);
-      return { ok: false, error: e.message };
-    }
-  }
-  _fmtVod(v) {
-    var area = v.vod_area || '';
-    if (Array.isArray(area)) area = area.join('/');
-    var cls = v.vod_class || '';
-    if (Array.isArray(cls)) cls = cls.join('/');
-    return { title: v.vod_name || '', img: v.vod_pic || '', url: '/api/parse-play?vod_id=' + v.vod_id, vodUrl: '/api/parse-play?vod_id=' + v.vod_id, tag: v.vod_remarks || '', desc: v.vod_content || '', year: v.vod_year || '', actors: v.vod_actor || '', type: v.type_name || '', area: area, class: cls };
-  }
-  async play(urlStr) {
-    try {
-      var UA = { 'User-Agent': 'okhttp/4.12.0' };
-      var isVideo = function(u){ return u && /^https?:\/\//i.test(u) && /(m3u8|mp4|flv|ts|aac)/i.test(u); };
-      // 外部 iframe 解析器（仅用于官网播放页兜底：腾讯/优酷/爱奇艺等）
-      var DEFAULT_PARSER = 'https://xn--qvr2v.850088.xyz/player/?url=';
-      var parseIframe = function(u, parser){
-        var p = parser || DEFAULT_PARSER;
-        var full = p.indexOf('?') > -1 || p.indexOf('=') > -1
-          ? p + (p.indexOf('=') > -1 && p.charAt(p.length-1) !== '=' ? '' : '') + encodeURIComponent(u)
-          : p + '?url=' + encodeURIComponent(u);
-        return { ok: true, url: full, header: UA, parse: true };
-      };
-
-      var parts = urlStr.split('@@');
-      var from = '', realUrl = urlStr, decodeStatus = '', parseUrl = '';
-      if (parts.length >= 5) {
-        from = parts[0];
-        decodeStatus = parts[1];
-        parseUrl = decodeURIComponent(parts[3] || '');
-        realUrl = parts.slice(4).join('@@');
-      } else if (parts.length >= 4) {
-        from = parts[0];
-        decodeStatus = parts[1];
-        realUrl = parts.slice(3).join('@@');
-      }
-
-      // 1) 直链视频（参考 布布影视.js：m3u8/mp4/flv/ts/aac 直接返回）
-      if (isVideo(realUrl)) return { ok: true, url: realUrl, header: UA };
-      // decode_status=2 视为直链
-      if (decodeStatus === '2' && realUrl && /^https?:/.test(realUrl)) return { ok: true, url: realUrl, header: UA };
-
-      // 2) 服务端 decode 接口（对齐布布影视.js：用 genHeaders 精简header + 手动拼接URL）
-      if (realUrl && from) {
-        try {
-          var decodeData = await this.decodeUrl(realUrl, from);
-          var dj = JSON.parse(decodeData);
-          if (dj && dj.data) {
-            var du = String(dj.data).trim();
-            // decode 返回新内容（非原样）才采用；原样返回说明 decode 无效（无套餐/获取失败）
-            if (du && du !== realUrl) {
-              // 参考布布影视.js：decode 成功直接返回 play.data，不管格式
-              return { ok: true, url: du, header: UA };
-            }
-          }
-        } catch(e) { console.error('[TVBox] decode error:', e.message); }
-      }
-
-      // 3) realUrl 为 http 非视频（官网播放页：腾讯/优酷/爱奇艺等）→ 外部 iframe 解析器兜底
-      if (realUrl && /^https?:/.test(realUrl)) return parseIframe(realUrl, parseUrl);
-
-      // 4) 令牌（JD-/co_ 等）decode 失败 → 不走外部解析器，返回失败
-      //    （外部解析器不认识这些加密令牌，走过去也是白屏）
-      return { ok: false, error: 'decode failed (no subscription or token invalid)' };
-    } catch(e) {
-      return { ok: false, error: e.message };
-    }
-  }
-}
-const tvboxSources = {
-  bubu: new TVBoxAPI({
-    host: 'https://bubutv.top',
-    pkg: 'com.sunshine.tv',
-    sk: 'SK-thanks',
-    finger: 'SF-C3B2B41F6EFFFF9869176CF68F6790E8F07506FC88632C94B4F5F0430D5498CA',
-    ver: '6',
-    updateId: '38b0ddfd-9aa3-8e42-5c92-a7fddd3d36e7',
-    deviceBrand: 'vivo',
-    deviceModel: 'V2309A'
-  }),
-  yunduo: new TVBoxAPI({
-    host: 'https://ds3xy2yunsa.xyz',
-    pkg: 'com.tvcloud.io',
-    sk: 'SK-sk_13oXDZ7u9j2Tk1c0cawWVFfO',
-    finger: 'SF-F5F11CB15897115AE6BCFE063C288F730CA865588F572C780A3E8477D0DD3776',
-    ver: '1',
-    updateId: '175070c3-075c-468b-950a-bf575769f4f1',
-    deviceBrand: 'vivo',
-    deviceModel: 'V2309A'
-  }),
-  damahou: new TVBoxAPI({
-    host: 'https://45.150.167.18:8000',
-    pkg: 'com.damahou.tv',
-    sk: 'SK-woniu-thanks',
-    finger: 'SF-A962FEC75DA28D7514F2A16580334272A78AC0A8429F10C94F47C1BAFC876E3F',
-    ver: '1',
-    updateId: '43c1ef69-3748-aaeb-317f-c621c77653ee',
-    deviceBrand: 'vivo',
-    deviceModel: 'V2309A',
-    filterDef: { '电影': { '地区': '大陆,中国', '类型': '喜剧' }, '动漫': { '地区': '大陆,中国' } }
-  })
-};
-
-// 源元数据（名称、logo）
-const sourceMeta = {
-  bubu: { name: '布布影视', logo: 'https://bubutv.top/adad/LOGO1-removebg-preview.png' },
-  yunduo: { name: '云朵影视', logo: '' },
-  damahou: { name: '大马猴影视', logo: '' }
-};
+// ========== TVBox API（拆分为独立模块）==========
+const { TVBoxAPI, tvboxSources, sourceMeta } = require("./tvbox_api.js");
 
 // 当前激活源（持久化到文件）
 const _SOURCE_CONFIG_FILE = path.join(__dirname, 'data', 'active_source.json');
@@ -2916,165 +2487,7 @@ window.addEventListener('orientationchange',function(){if(_epgResizeTimer)clearT
     return send(res, 200, localHtml(file), 'text/html; charset=utf-8');
   }
 
-  // 本地JSON文件列表
-  if (pathname === '/local-list-api') {
-    try {
-      ensureDataDir();
-      var files = fs.readdirSync(DATA_DIR).filter(function(f) { return f.endsWith('.json'); }).map(function(f) {
-        var fp = path.join(DATA_DIR, f);
-        var stat = fs.statSync(fp);
-        var count = 0;
-        try {
-          var list = getLocalList(fp);
-          count = list.length;
-        } catch(e) {}
-        return { name: f, size: stat.size, count: count };
-      });
-      send(res, 200, JSON.stringify({ok:true, files: files}), 'application/json');
-    } catch(e) { send(res, 200, JSON.stringify({ok:false, error: e.message}), 'application/json'); }
-    return;
-  }
-
-  // 本地JSON文件内容API
-  if (pathname === '/local-api') {
-    const filePath = u.searchParams.get('file') || '';
-    const page = parseInt(u.searchParams.get('page') || '1');
-    const category = u.searchParams.get('category') || '';
-    if (!filePath) return send(res, 200, JSON.stringify({ok:false,error:'no file param'}));
-    const absPath = filePath.charAt(0) === '/' ? filePath : path.join(DATA_DIR, filePath);
-    try {
-      var list = getLocalList(absPath);
-      // 按分类过滤
-      if (category) {
-        list = list.filter(function(v) {
-          var vid = (v.vod_id || '').toLowerCase();
-          var tn = (v.type_name || '').toLowerCase();
-          if (category === 'movie') return vid.indexOf('/movie/') > -1;
-          if (category === 'tv') return vid.indexOf('/tv/') > -1;
-          if (category === 'other') return vid.indexOf('/movie/') === -1 && vid.indexOf('/tv/') === -1;
-          return true;
-        });
-      }
-      var pageSize = 20;
-      var start = (page - 1) * pageSize;
-      var pageList = list.slice(start, start + pageSize);
-      var items = pageList.map(function(v) {
-        var playFrom = (v.vod_play_from || '').split('$$$');
-        var playUrl = (v.vod_play_url || '').split('$$$');
-        var sources = [];
-        for (var i = 0; i < playFrom.length; i++) {
-          var eps = (playUrl[i] || '').split('#');
-          var epList = [];
-          for (var j = 0; j < eps.length; j++) {
-            var parts = eps[j].split('$');
-            if (parts.length >= 2) epList.push({title: parts[0], url: parts[1]});
-            else if (parts.length === 1 && parts[0]) epList.push({title: '第' + (j + 1) + '集', url: parts[0]});
-          }
-          if (epList.length) sources.push({name: playFrom[i] || ('线路' + (i + 1)), episodes: epList});
-        }
-        var img = v.vod_pic || '';
-        var proxyImg = img ? '/img?url=' + encodeURIComponent(img) : '';
-        return {
-          title: v.vod_name || '', url: v.vod_id || '', img: proxyImg, directImg: img,
-          tag: v.vod_remarks || '', desc: v.vod_actor || '',
-          meta: (v.vod_year || '') + ' ' + (v.vod_area || ''),
-          actors: v.vod_actor || '', intro: v.vod_content ? strip(v.vod_content) : '',
-          sources: sources,
-          playUrl: (function() {
-            for (var i = 0; i < playUrl.length; i++) {
-              var eps = (playUrl[i] || '').split('#');
-              for (var j = 0; j < eps.length; j++) {
-                var parts = eps[j].split('$');
-                var u2 = parts.length >= 2 ? parts[1] : parts[0];
-                if (u2 && /\.m3u8/i.test(u2)) return u2;
-              }
-            }
-            return playUrl[0] ? (playUrl[0].split('#')[0].split('$')[1] || '') : '';
-          })(),
-          vodUrl: v.vod_id || ''
-        };
-      });
-      send(res, 200, JSON.stringify({ok:true, items: items, total: list.length, page: page}), 'application/json');
-    } catch(e) { send(res, 200, JSON.stringify({ok:false, error: e.message}), 'application/json'); }
-    return;
-  }
-
-  // 本地搜索页面
-  if (pathname === '/local-search') {
-    const wd = u.searchParams.get('wd') || '';
-    return send(res, 200, localSearchHtml(wd), 'text/html; charset=utf-8');
-  }
-
-  // 本地搜索API（去重）
-  if (pathname === '/local-search-api') {
-    const wd = (u.searchParams.get('wd') || '').trim().toLowerCase();
-    if (!wd) return send(res, 200, JSON.stringify({ok:true, items:[], total:0}), 'application/json');
-    try {
-      ensureDataDir();
-      var allFiles = fs.readdirSync(DATA_DIR).filter(function(f) { return f.endsWith('.json'); });
-      var allItems = [];
-      for (var fi = 0; fi < allFiles.length; fi++) {
-        try {
-          var listF = getLocalList(path.join(DATA_DIR, allFiles[fi]));
-          for (var vi = 0; vi < listF.length; vi++) {
-            var v = listF[vi];
-            var name = (v.vod_name || '').toLowerCase();
-            var actor = (v.vod_actor || '').toLowerCase();
-            var area = (v.vod_area || '').toLowerCase();
-            var year = (v.vod_year || '').toLowerCase();
-            var typeName = (v.type_name || '').toLowerCase();
-            if (name.indexOf(wd) > -1 || actor.indexOf(wd) > -1 || area.indexOf(wd) > -1 || year.indexOf(wd) > -1 || typeName.indexOf(wd) > -1) {
-              var playFrom = (v.vod_play_from || '').split('$$$');
-              var playUrl2 = (v.vod_play_url || '').split('$$$');
-              var sources = [];
-              for (var i = 0; i < playFrom.length; i++) {
-                var eps = (playUrl2[i] || '').split('#');
-                var epList = [];
-                for (var j = 0; j < eps.length; j++) {
-                  var parts = eps[j].split('$');
-                  if (parts.length >= 2) epList.push({title: parts[0], url: parts[1]});
-                  else if (parts.length === 1 && parts[0]) epList.push({title: '第' + (j + 1) + '集', url: parts[0]});
-                }
-                if (epList.length) sources.push({name: playFrom[i] || ('线路' + (i + 1)), episodes: epList});
-              }
-              var img = v.vod_pic || '';
-              var proxyImg = img ? '/img?url=' + encodeURIComponent(img) : '';
-              allItems.push({
-                title: v.vod_name || '', url: v.vod_id || '', img: proxyImg, directImg: img,
-                tag: v.vod_remarks || '', desc: v.vod_actor || '',
-                meta: (v.vod_year || '') + ' ' + (v.vod_area || ''),
-                actors: v.vod_actor || '', intro: v.vod_content ? strip(v.vod_content) : '',
-                sources: sources,
-                playUrl: (function() {
-                  for (var i = 0; i < playUrl2.length; i++) {
-                    var eps = (playUrl2[i] || '').split('#');
-                    for (var j = 0; j < eps.length; j++) {
-                      var parts = eps[j].split('$');
-                      var u2 = parts.length >= 2 ? parts[1] : parts[0];
-                      if (u2 && /\.m3u8/i.test(u2)) return u2;
-                    }
-                  }
-                  return playUrl2[0] ? (playUrl2[0].split('#')[0].split('$')[1] || '') : '';
-                })(),
-                vodUrl: v.vod_id || '', fromFile: allFiles[fi]
-              });
-            }
-          }
-        } catch(e) {}
-      }
-      // 去重
-      var seen = new Map();
-      var uniqueItems = [];
-      for (var di = 0; di < allItems.length; di++) {
-        var item = allItems[di];
-        var key = item.vodUrl || item.title || ('item_' + di);
-        if (!seen.has(key)) { seen.set(key, true); uniqueItems.push(item); }
-      }
-      send(res, 200, JSON.stringify({ok:true, items: uniqueItems, total: uniqueItems.length}), 'application/json');
-    } catch(e) { send(res, 200, JSON.stringify({ok:false, error: e.message}), 'application/json'); }
-    return;
-  }
-
+  if (pathname === '/local-list-api' || pathname === '/local-api' || pathname === '/local-search-api') { return handleLocalApi(req, res, u, pathname); }
   // M3U影片源转换保存
   if (pathname === '/m3u-convert-save') {
     var body4 = '';
@@ -3846,233 +3259,7 @@ io.observe(el('#tip'));loadMore();
     return;
   }
 
-  if (pathname === '/files-epub-view' || pathname === '/files-epub-text') {
-    const fp = u.searchParams.get('path') || '';
-    if (!fp || !fs.existsSync(fp)) return send(res, 200, JSON.stringify({ok:false,error:'文件不存在'}), 'application/json');
-    try {
-      const zlib = require('zlib');
-      const stat = fs.statSync(fp);
-      if (stat.size > 100*1024*1024) return send(res, 200, JSON.stringify({ok:false,error:'EPUB文件过大（超过100MB）'}), 'application/json');
-      const data = fs.readFileSync(fp);
-      const texts = [];
-      const errors = [];
-      let htmlCount = 0;
-      const imgMap = {};
-      const imgExts = {'.png':'image/png','.jpg':'image/jpeg','.jpeg':'image/jpeg','.gif':'image/gif','.webp':'image/webp','.bmp':'image/bmp','.svg':'image/svg+xml'};
-
-      function findEocd(data) {
-        for (let ei = data.length - 22; ei >= Math.max(0, data.length - 65557); ei--) {
-          if (data.readUInt32LE(ei) === 0x06054b50) return ei;
-        }
-        return -1;
-      }
-      function readUInt64LE(buf, off) { return Number(buf.readBigUInt64LE(off)); }
-
-      // 提取文件数据的通用函数
-      function extractFile(data, localOff, cdCSize, cdMethod) {
-        const lhNLen = data.readUInt16LE(localOff + 26);
-        const lhELen = data.readUInt16LE(localOff + 28);
-        const dStart = localOff + 30 + lhNLen + lhELen;
-        if (cdMethod === 8) {
-          return zlib.inflateRawSync(data.slice(dStart, dStart + cdCSize));
-        } else if (cdMethod === 0) {
-          return data.slice(dStart, dStart + cdCSize);
-        }
-        return null;
-      }
-
-      // 处理HTML内容：保留img标签，替换src为base64
-      function processHtml(raw) {
-        // 去掉style和script
-        let html = raw.replace(/<style[\s\S]*?<\/style>/gi,'').replace(/<script[\s\S]*?<\/script>/gi,'');
-        // 替换img的src
-        html = html.replace(/(<img\s[^>]*?src\s*=\s*)(["'])([^"']+)\2/gi, function(m, pre, q, src) {
-          var resolved = resolveEpubPath(src);
-          if (imgMap[resolved]) return pre + q + imgMap[resolved] + q;
-          // 也尝试不带路径的匹配
-          var baseName = resolved.split('/').pop();
-          for (var k in imgMap) { if (k.endsWith(baseName)) return pre + q + imgMap[k] + q; }
-          return m;
-        });
-        // 去掉其他标签但保留内容，保留img
-        html = html.replace(/<(?!\/?img\b)[^>]+>/g, function(tag) {
-          // 保留br、p、div、h1-h6的换行效果
-          if (/^<br/i.test(tag)) return '\n';
-          if (/^<(\/?)(p|div|h[1-6]|li|tr|blockquote)/i.test(tag)) return '\n';
-          return '';
-        });
-        html = html.replace(/&nbsp;/g,' ').replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/\n{3,}/g,'\n\n').trim();
-        return html;
-      }
-
-      // 解析EPUB内部路径（相对路径解析）
-      var htmlBasePath = '';
-      function resolveEpubPath(src) {
-        src = src.replace(/^\.\//,'').replace(/^\.\.\//,'');
-        // 去除fragment
-        src = src.split('#')[0];
-        // 相对路径解析
-        if (src.startsWith('/')) return src.replace(/^\//,'');
-        if (htmlBasePath) {
-          var parts = htmlBasePath.split('/');
-          parts.pop();
-          var srcParts = src.split('/');
-          for (var p of srcParts) {
-            if (p === '..') parts.pop();
-            else if (p !== '.') parts.push(p);
-          }
-          return parts.join('/');
-        }
-        return src;
-      }
-
-      const eocdOff = findEocd(data);
-      let cdCount, cdOff, isZip64 = false;
-
-      if (eocdOff >= 0) {
-        cdCount = data.readUInt16LE(eocdOff + 10);
-        cdOff = data.readUInt32LE(eocdOff + 16);
-        if (cdOff === 0xFFFFFFFF || cdCount === 0xFFFF) {
-          if (eocdOff >= 20) {
-            const z64LocOff = data.readUInt32LE(eocdOff - 20);
-            if (z64LocOff + 56 <= data.length && data.readUInt32LE(z64LocOff) === 0x07064b50) {
-              const z64EocdOff = readUInt64LE(data, z64LocOff + 8);
-              if (z64EocdOff + 56 <= data.length && data.readUInt32LE(z64EocdOff) === 0x06064b50) {
-                isZip64 = true;
-                cdCount = readUInt64LE(data, z64EocdOff + 24);
-                cdOff = readUInt64LE(data, z64EocdOff + 40);
-              }
-            }
-          }
-        }
-      }
-
-      if (eocdOff >= 0) {
-        let cp = cdOff;
-        // 第一遍：提取所有图片到imgMap
-        for (let ci = 0; ci < cdCount && cp + 46 <= data.length; ci++) {
-          if (data.readUInt32LE(cp) !== 0x02014b50) break;
-          let cdMethod = data.readUInt16LE(cp + 10);
-          let cdCSize = data.readUInt32LE(cp + 20);
-          let cdNLen = data.readUInt16LE(cp + 28);
-          let cdELen = data.readUInt16LE(cp + 30);
-          let cdCLen = data.readUInt16LE(cp + 32);
-          let localOff = data.readUInt32LE(cp + 42);
-          let cdName = data.slice(cp + 46, cp + 46 + cdNLen).toString('utf8');
-          if (isZip64 && (cdCSize === 0xFFFFFFFF || localOff === 0xFFFFFFFF)) {
-            let ep = cp + 46 + cdNLen;
-            if (cdCSize === 0xFFFFFFFF) { cdCSize = readUInt64LE(data, ep); ep += 8; }
-            if (localOff === 0xFFFFFFFF) { localOff = readUInt64LE(data, ep); ep += 8; }
-          }
-          var ext = path.extname(cdName).toLowerCase();
-          if (imgExts[ext] && cdCSize > 0 && localOff + 30 <= data.length) {
-            try {
-              var imgData = extractFile(data, localOff, cdCSize, cdMethod);
-              if (imgData && imgData.length < 500000) {
-                imgMap[cdName] = 'data:' + imgExts[ext] + ';base64,' + imgData.toString('base64');
-              }
-            } catch(e4) {}
-          }
-          cp += 46 + cdNLen + cdELen + cdCLen;
-        }
-        // 第二遍：提取HTML
-        cp = cdOff;
-        for (let ci = 0; ci < cdCount && cp + 46 <= data.length; ci++) {
-          if (data.readUInt32LE(cp) !== 0x02014b50) break;
-          let cdMethod = data.readUInt16LE(cp + 10);
-          let cdCSize = data.readUInt32LE(cp + 20);
-          let cdNLen = data.readUInt16LE(cp + 28);
-          let cdELen = data.readUInt16LE(cp + 30);
-          let cdCLen = data.readUInt16LE(cp + 32);
-          let localOff = data.readUInt32LE(cp + 42);
-          let cdName = data.slice(cp + 46, cp + 46 + cdNLen).toString('utf8');
-          if (isZip64 && (cdCSize === 0xFFFFFFFF || localOff === 0xFFFFFFFF)) {
-            let ep = cp + 46 + cdNLen;
-            if (cdCSize === 0xFFFFFFFF) { cdCSize = readUInt64LE(data, ep); ep += 8; }
-            if (localOff === 0xFFFFFFFF) { localOff = readUInt64LE(data, ep); ep += 8; }
-          }
-          if (/\.x?html?$/i.test(cdName)) {
-            htmlCount++;
-            if (cdCSize > 0 && localOff + 30 <= data.length) {
-              try {
-                htmlBasePath = cdName;
-                let raw = extractFile(data, localOff, cdCSize, cdMethod).toString('utf8');
-                let txt = processHtml(raw);
-                if (txt.length > 5) texts.push(txt);
-              } catch(e2) {
-                errors.push(cdName + ': ' + e2.message);
-              }
-            }
-          }
-          cp += 46 + cdNLen + cdELen + cdCLen;
-        }
-      } else {
-        // 第一遍：收集所有条目信息并提取图片
-        let pos = 0;
-        const entries = [];
-        while (pos < data.length - 4) {
-          if (data.readUInt32LE(pos) !== 0x04034b50) break;
-          const nLen = data.readUInt16LE(pos + 26);
-          const eLen = data.readUInt16LE(pos + 28);
-          const method = data.readUInt16LE(pos + 8);
-          const flags = data.readUInt16LE(pos + 6);
-          let cSize = data.readUInt32LE(pos + 18);
-          const name = data.slice(pos + 30, pos + 30 + nLen).toString('utf8');
-          const dStart = pos + 30 + nLen + eLen;
-          if (cSize === 0 && (flags & 0x08)) {
-            for (let si = dStart; si < data.length - 4; si++) {
-              const sig = data.readUInt32LE(si);
-              if (sig === 0x04034b50 || sig === 0x02014b50) { cSize = si - dStart; break; }
-            }
-          }
-          entries.push({name, method, cSize, dStart});
-          // 提取图片
-          var ext2 = path.extname(name).toLowerCase();
-          if (imgExts[ext2] && cSize > 0) {
-            try {
-              var imgData2 = method === 8 ? zlib.inflateRawSync(data.slice(dStart, dStart + cSize)) : data.slice(dStart, dStart + cSize);
-              if (imgData2 && imgData2.length < 500000) {
-                imgMap[name] = 'data:' + imgExts[ext2] + ';base64,' + imgData2.toString('base64');
-              }
-            } catch(e5) {}
-          }
-          pos = dStart + (cSize > 0 ? cSize : 0);
-        }
-        // 第二遍：处理HTML
-        for (const ent of entries) {
-          if (/\.x?html?$/i.test(ent.name) && ent.cSize > 0) {
-            htmlCount++;
-            try {
-              htmlBasePath = ent.name;
-              let raw = ent.method === 8 ? zlib.inflateRawSync(data.slice(ent.dStart, ent.dStart + ent.cSize)).toString('utf8') : data.slice(ent.dStart, ent.dStart + ent.cSize).toString('utf8');
-              let txt = processHtml(raw);
-              if (txt.length > 5) texts.push(txt);
-            } catch(e3) {
-              errors.push(ent.name + ': ' + e3.message);
-            }
-          }
-        }
-      }
-
-      var full = texts.length > 0 ? texts.join('\n\n') : '';
-      if (full.length > 2000000) full = full.substring(0, 2000000) + '\n\n... (内容过长已截断)';
-
-      var result = {
-        ok: texts.length > 0,
-        text: full,
-        htmlCount: htmlCount,
-        zipType: eocdOff >= 0 ? (isZip64 ? 'ZIP64' : '标准ZIP') : '本地文件头模式',
-        errorCount: errors.length,
-        errors: errors.slice(0, 5)
-      };
-      if (texts.length === 0) {
-        result.error = '无法解析此EPUB文件（扫描到' + htmlCount + '个HTML文件，' + errors.length + '个错误）';
-      }
-      return send(res, 200, JSON.stringify(result), 'application/json');
-    } catch(e) {
-      return send(res, 200, JSON.stringify({ok:false,error:'解析失败: '+e.message}), 'application/json');
-    }
-  }
+  if (pathname === '/files-epub-view' || pathname === '/files-epub-text') { return handleFilesEpub(req, res, u, pathname); }
 
   if (pathname === '/files-thumb') {
     const fp = u.searchParams.get('path') || '';
@@ -4090,118 +3277,520 @@ io.observe(el('#tip'));loadMore();
     return;
   }
 
-  if (pathname === '/files-lyrics') {
-    const fp = u.searchParams.get('path') || '';
-    const name = u.searchParams.get('name') || '';
-    if (!fp) return send(res, 200, JSON.stringify({ok:false}), 'application/json');
-    var https = require('https'); var http = require('http');
-    function tryResult(lyrics, source) {
-      if (lyrics && lyrics.trim()) return send(res, 200, JSON.stringify({ok:true, lyrics:lyrics, source:source}), 'application/json');
-      sendOnline();
-    }
-    function sendOnline() {
-      var rawName = (name || path.basename(fp, path.extname(fp))).replace(/\.[^.]+$/,'').trim();
-      var parts = rawName.split(/\s*-\s*/);
-      var artist = parts.length > 1 ? parts[0].trim() : '';
-      var title = parts.length > 1 ? parts.slice(1).join('-').trim() : rawName;
-      title = title.replace(/\[.*?\]|\(.*?\)/g,'').trim();
-      artist = artist.replace(/\[.*?\]|\(.*?\)/g,'').trim();
-      if (!title) { send(res, 200, JSON.stringify({ok:false}), 'application/json'); return; }
-      var keyword = encodeURIComponent((artist ? artist+' ' : '') + title);
-      var surl = 'https://c.y.qq.com/soso/fcgi-bin/client_search_cp?w=' + keyword + '&format=json&p=1&n=1';
-      var sreq = https.get(surl, {headers:{'User-Agent':'Mozilla/5.0'}, timeout:5000}, function(sres) {
-        var sbody = '';
-        sres.on('data', function(c) { sbody += c; });
-        sres.on('end', function() {
-          try {
-            var sj = JSON.parse(sbody);
-            var songs = (sj.data && sj.data.song && sj.data.song.list) || [];
-            if (!songs.length) { send(res, 200, JSON.stringify({ok:false}), 'application/json'); return; }
-            var songmid = songs[0].songmid;
-            var lurl = 'https://c.y.qq.com/lyric/fcgi-bin/fcg_query_lyric_new.fcg?songmid=' + songmid + '&format=json&nobase64=1';
-            var lreq = https.get(lurl, {headers:{'User-Agent':'Mozilla/5.0','Referer':'https://y.qq.com/'}, timeout:5000}, function(lres) {
-              var lbody = '';
-              lres.on('data', function(c) { lbody += c; });
-              lres.on('end', function() {
-                try {
-                  var lj = JSON.parse(lbody);
-                  if (lj.lyric) return send(res, 200, JSON.stringify({ok:true, lyrics:lj.lyric, source:'online'}), 'application/json');
-                  send(res, 200, JSON.stringify({ok:false}), 'application/json');
-                } catch(e3) { send(res, 200, JSON.stringify({ok:false}), 'application/json'); }
-              });
-            });
-            lreq.on('error', function() { send(res, 200, JSON.stringify({ok:false}), 'application/json'); });
-            lreq.setTimeout(5000, function() { lreq.destroy(); send(res, 200, JSON.stringify({ok:false}), 'application/json'); });
-          } catch(e2) { send(res, 200, JSON.stringify({ok:false}), 'application/json'); }
-        });
-      });
-      sreq.on('error', function() { send(res, 200, JSON.stringify({ok:false}), 'application/json'); });
-      sreq.setTimeout(5000, function() { sreq.destroy(); send(res, 200, JSON.stringify({ok:false}), 'application/json'); });
-    }
-    // 1. 同名.lrc文件
-    try {
-      var baseName = path.basename(fp, path.extname(fp));
-      var dirName = path.dirname(fp);
-      var lrcPath = path.join(dirName, '\u6b4c\u8bcd', baseName + '.lrc');
-      if (!fs.existsSync(lrcPath)) lrcPath = fp.replace(/\.[^.]+$/, '.lrc');
-      if (fs.existsSync(lrcPath)) {
-        var lrcContent = fs.readFileSync(lrcPath, 'utf8');
-        if (lrcContent && lrcContent.trim()) return send(res, 200, JSON.stringify({ok:true, lyrics:lrcContent, source:'lrc'}), 'application/json');
-      }
-    } catch(e) {}
-    // 2. 内嵌歌词(ID3)
-    try {
-      var buf = fs.readFileSync(fp);
-      if (buf.length > 3 && buf[0] === 0x49 && buf[1] === 0x44 && buf[2] === 0x33) {
-        var pos = 10 + ((buf[6] & 0x7f) << 21 | (buf[7] & 0x7f) << 14 | (buf[8] & 0x7f) << 7 | (buf[9] & 0x7f));
-        var endPos = Math.min(pos + 1024 * 1024, buf.length);
-        var p = 10;
-        while (p + 10 < endPos) {
-          var fid = buf.toString('latin1', p, p + 4);
-          if (fid === '\x00\x00\x00\x00' || fid.charCodeAt(0) === 0) break;
-          var fSize = buf.readUInt32BE(p + 4);
-          if (fSize <= 0 || p + 10 + fSize > endPos) break;
-          var fFlag = buf.readUInt16BE(p + 8);
-          var fData = buf.slice(p + 10, p + 10 + fSize);
-          if (fid === 'USLT' || fid === 'SYLT') {
-            try {
-              var enc = fData[0];
-              var lang = fData.toString('latin1', 1, 4);
-              var descEnd = fData.indexOf(0x00, 4);
-              var textStart = descEnd >= 0 ? descEnd + 1 : 4;
-              if (textStart >= fData.length) textStart = 4;
-              var lyricText = '';
-              if (enc === 0) {
-                lyricText = fData.toString('latin1', textStart);
-              } else if (enc === 1) {
-                var bom = fData.readUInt16BE(textStart);
-                if (bom === 0xFEFF || bom === 0xFFFE) {
-                  lyricText = fData.toString('utf16le', textStart + 2);
-                } else {
-                  lyricText = fData.toString('utf16le', textStart);
-                }
-              } else if (enc === 2 || enc === 3) {
-                lyricText = fData.toString('utf8', textStart);
-              } else {
-                lyricText = fData.toString('latin1', textStart);
-              }
-              if (lyricText && lyricText.trim()) return send(res, 200, JSON.stringify({ok:true, lyrics:lyricText, source:'embedded'}), 'application/json');
-            } catch(e2) {}
-          }
-          p += 10 + fSize;
-        }
-      }
-    } catch(e) {}
-    // 3. 在线API
-    sendOnline();
-    return;
-  }
+  if (pathname === '/files-lyrics') { return handleFilesLyrics(req, res, u); }
 });
 
 server.listen(PORT, '0.0.0.0', () => {
   console.log(`[bubutv-proxy] http://0.0.0.0:${PORT}`);
   const keySource = process.env.TMDB_KEY ? 'env' : (fs.existsSync(_TMDB_CONFIG_FILE) ? 'config' : 'default');
   console.log(`[bubutv-proxy] http://0.0.0.0:${PORT} | TMDB key: ${keySource}`);});
+
+
+
+// ========== 本地影片库 API（从 createServer 回调拆出，隔离 V8 TurboFan 对 map 回调的优化）==========
+function handleLocalApi(req, res, u, pathname) {
+// 本地JSON文件列表
+if (pathname === '/local-list-api') {
+  try {
+    ensureDataDir();
+    var files = fs.readdirSync(DATA_DIR).filter(function(f) { return f.endsWith('.json'); }).map(function(f) {
+      var fp = path.join(DATA_DIR, f);
+      var stat = fs.statSync(fp);
+      var count = 0;
+      try {
+        var list = getLocalList(fp);
+        count = list.length;
+      } catch(e) {}
+      return { name: f, size: stat.size, count: count };
+    });
+    send(res, 200, JSON.stringify({ok:true, files: files}), 'application/json');
+  } catch(e) { send(res, 200, JSON.stringify({ok:false, error: e.message}), 'application/json'); }
+  return;
+}
+
+// 本地JSON文件内容API
+if (pathname === '/local-api') {
+  const filePath = u.searchParams.get('file') || '';
+  const page = parseInt(u.searchParams.get('page') || '1');
+  const category = u.searchParams.get('category') || '';
+  if (!filePath) return send(res, 200, JSON.stringify({ok:false,error:'no file param'}));
+  const absPath = filePath.charAt(0) === '/' ? filePath : path.join(DATA_DIR, filePath);
+  try {
+    var list = getLocalList(absPath);
+    // 按分类过滤
+    if (category) {
+      list = list.filter(function(v) {
+        var vid = (v.vod_id || '').toLowerCase();
+        var tn = (v.type_name || '').toLowerCase();
+        if (category === 'movie') return vid.indexOf('/movie/') > -1;
+        if (category === 'tv') return vid.indexOf('/tv/') > -1;
+        if (category === 'other') return vid.indexOf('/movie/') === -1 && vid.indexOf('/tv/') === -1;
+        return true;
+      });
+    }
+    var pageSize = 20;
+    var start = (page - 1) * pageSize;
+    var pageList = list.slice(start, start + pageSize);
+    var items = pageList.map(function(v) {
+      var playFrom = (v.vod_play_from || '').split('$$$');
+      var playUrl = (v.vod_play_url || '').split('$$$');
+      var sources = [];
+      for (var i = 0; i < playFrom.length; i++) {
+        var eps = (playUrl[i] || '').split('#');
+        var epList = [];
+        for (var j = 0; j < eps.length; j++) {
+          var parts = eps[j].split('$');
+          if (parts.length >= 2) epList.push({title: parts[0], url: parts[1]});
+          else if (parts.length === 1 && parts[0]) epList.push({title: '第' + (j + 1) + '集', url: parts[0]});
+        }
+        if (epList.length) sources.push({name: playFrom[i] || ('线路' + (i + 1)), episodes: epList});
+      }
+      var img = v.vod_pic || '';
+      var proxyImg = img ? '/img?url=' + encodeURIComponent(img) : '';
+      return {
+        title: v.vod_name || '', url: v.vod_id || '', img: proxyImg, directImg: img,
+        tag: v.vod_remarks || '', desc: v.vod_actor || '',
+        meta: (v.vod_year || '') + ' ' + (v.vod_area || ''),
+        actors: v.vod_actor || '', intro: v.vod_content ? strip(v.vod_content) : '',
+        sources: sources,
+        playUrl: (function() {
+          for (var i = 0; i < playUrl.length; i++) {
+            var eps = (playUrl[i] || '').split('#');
+            for (var j = 0; j < eps.length; j++) {
+              var parts = eps[j].split('$');
+              var u2 = parts.length >= 2 ? parts[1] : parts[0];
+              if (u2 && /\.m3u8/i.test(u2)) return u2;
+            }
+          }
+          return playUrl[0] ? (playUrl[0].split('#')[0].split('$')[1] || '') : '';
+        })(),
+        vodUrl: v.vod_id || ''
+      };
+    });
+    send(res, 200, JSON.stringify({ok:true, items: items, total: list.length, page: page}), 'application/json');
+  } catch(e) { send(res, 200, JSON.stringify({ok:false, error: e.message}), 'application/json'); }
+  return;
+}
+
+// 本地搜索页面
+if (pathname === '/local-search') {
+  const wd = u.searchParams.get('wd') || '';
+  return send(res, 200, localSearchHtml(wd), 'text/html; charset=utf-8');
+}
+
+// 本地搜索API（去重）
+if (pathname === '/local-search-api') {
+  const wd = (u.searchParams.get('wd') || '').trim().toLowerCase();
+  if (!wd) return send(res, 200, JSON.stringify({ok:true, items:[], total:0}), 'application/json');
+  try {
+    ensureDataDir();
+    var allFiles = fs.readdirSync(DATA_DIR).filter(function(f) { return f.endsWith('.json'); });
+    var allItems = [];
+    for (var fi = 0; fi < allFiles.length; fi++) {
+      try {
+        var listF = getLocalList(path.join(DATA_DIR, allFiles[fi]));
+        for (var vi = 0; vi < listF.length; vi++) {
+          var v = listF[vi];
+          var name = (v.vod_name || '').toLowerCase();
+          var actor = (v.vod_actor || '').toLowerCase();
+          var area = (v.vod_area || '').toLowerCase();
+          var year = (v.vod_year || '').toLowerCase();
+          var typeName = (v.type_name || '').toLowerCase();
+          if (name.indexOf(wd) > -1 || actor.indexOf(wd) > -1 || area.indexOf(wd) > -1 || year.indexOf(wd) > -1 || typeName.indexOf(wd) > -1) {
+            var playFrom = (v.vod_play_from || '').split('$$$');
+            var playUrl2 = (v.vod_play_url || '').split('$$$');
+            var sources = [];
+            for (var i = 0; i < playFrom.length; i++) {
+              var eps = (playUrl2[i] || '').split('#');
+              var epList = [];
+              for (var j = 0; j < eps.length; j++) {
+                var parts = eps[j].split('$');
+                if (parts.length >= 2) epList.push({title: parts[0], url: parts[1]});
+                else if (parts.length === 1 && parts[0]) epList.push({title: '第' + (j + 1) + '集', url: parts[0]});
+              }
+              if (epList.length) sources.push({name: playFrom[i] || ('线路' + (i + 1)), episodes: epList});
+            }
+            var img = v.vod_pic || '';
+            var proxyImg = img ? '/img?url=' + encodeURIComponent(img) : '';
+            allItems.push({
+              title: v.vod_name || '', url: v.vod_id || '', img: proxyImg, directImg: img,
+              tag: v.vod_remarks || '', desc: v.vod_actor || '',
+              meta: (v.vod_year || '') + ' ' + (v.vod_area || ''),
+              actors: v.vod_actor || '', intro: v.vod_content ? strip(v.vod_content) : '',
+              sources: sources,
+              playUrl: (function() {
+                for (var i = 0; i < playUrl2.length; i++) {
+                  var eps = (playUrl2[i] || '').split('#');
+                  for (var j = 0; j < eps.length; j++) {
+                    var parts = eps[j].split('$');
+                    var u2 = parts.length >= 2 ? parts[1] : parts[0];
+                    if (u2 && /\.m3u8/i.test(u2)) return u2;
+                  }
+                }
+                return playUrl2[0] ? (playUrl2[0].split('#')[0].split('$')[1] || '') : '';
+              })(),
+              vodUrl: v.vod_id || '', fromFile: allFiles[fi]
+            });
+          }
+        }
+      } catch(e) {}
+    }
+    // 去重
+    var seen = new Map();
+    var uniqueItems = [];
+    for (var di = 0; di < allItems.length; di++) {
+      var item = allItems[di];
+      var key = item.vodUrl || item.title || ('item_' + di);
+      if (!seen.has(key)) { seen.set(key, true); uniqueItems.push(item); }
+    }
+    send(res, 200, JSON.stringify({ok:true, items: uniqueItems, total: uniqueItems.length}), 'application/json');
+  } catch(e) { send(res, 200, JSON.stringify({ok:false, error: e.message}), 'application/json'); }
+  return;
+}
+
+}
+
+// ========== EPUB/ZIP 解析（从 createServer 回调拆出，隔离 V8 TurboFan 对二进制操作的优化）==========
+function handleFilesEpub(req, res, u, pathname) {
+
+  const fp = u.searchParams.get('path') || '';
+  if (!fp || !fs.existsSync(fp)) return send(res, 200, JSON.stringify({ok:false,error:'文件不存在'}), 'application/json');
+  try {
+    const zlib = require('zlib');
+    const stat = fs.statSync(fp);
+    if (stat.size > 100*1024*1024) return send(res, 200, JSON.stringify({ok:false,error:'EPUB文件过大（超过100MB）'}), 'application/json');
+    const data = fs.readFileSync(fp);
+    const texts = [];
+    const errors = [];
+    let htmlCount = 0;
+    const imgMap = {};
+    const imgExts = {'.png':'image/png','.jpg':'image/jpeg','.jpeg':'image/jpeg','.gif':'image/gif','.webp':'image/webp','.bmp':'image/bmp','.svg':'image/svg+xml'};
+
+    function findEocd(data) {
+      for (let ei = data.length - 22; ei >= Math.max(0, data.length - 65557); ei--) {
+        if (data.readUInt32LE(ei) === 0x06054b50) return ei;
+      }
+      return -1;
+    }
+    function readUInt64LE(buf, off) { return Number(buf.readBigUInt64LE(off)); }
+
+    // 提取文件数据的通用函数
+    function extractFile(data, localOff, cdCSize, cdMethod) {
+      const lhNLen = data.readUInt16LE(localOff + 26);
+      const lhELen = data.readUInt16LE(localOff + 28);
+      const dStart = localOff + 30 + lhNLen + lhELen;
+      if (cdMethod === 8) {
+        return zlib.inflateRawSync(data.slice(dStart, dStart + cdCSize));
+      } else if (cdMethod === 0) {
+        return data.slice(dStart, dStart + cdCSize);
+      }
+      return null;
+    }
+
+    // 处理HTML内容：保留img标签，替换src为base64
+    function processHtml(raw) {
+      // 去掉style和script
+      let html = raw.replace(/<style[\s\S]*?<\/style>/gi,'').replace(/<script[\s\S]*?<\/script>/gi,'');
+      // 替换img的src
+      html = html.replace(/(<img\s[^>]*?src\s*=\s*)(["'])([^"']+)\2/gi, function(m, pre, q, src) {
+        var resolved = resolveEpubPath(src);
+        if (imgMap[resolved]) return pre + q + imgMap[resolved] + q;
+        // 也尝试不带路径的匹配
+        var baseName = resolved.split('/').pop();
+        for (var k in imgMap) { if (k.endsWith(baseName)) return pre + q + imgMap[k] + q; }
+        return m;
+      });
+      // 去掉其他标签但保留内容，保留img
+      html = html.replace(/<(?!\/?img\b)[^>]+>/g, function(tag) {
+        // 保留br、p、div、h1-h6的换行效果
+        if (/^<br/i.test(tag)) return '\n';
+        if (/^<(\/?)(p|div|h[1-6]|li|tr|blockquote)/i.test(tag)) return '\n';
+        return '';
+      });
+      html = html.replace(/&nbsp;/g,' ').replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/\n{3,}/g,'\n\n').trim();
+      return html;
+    }
+
+    // 解析EPUB内部路径（相对路径解析）
+    var htmlBasePath = '';
+    function resolveEpubPath(src) {
+      src = src.replace(/^\.\//,'').replace(/^\.\.\//,'');
+      // 去除fragment
+      src = src.split('#')[0];
+      // 相对路径解析
+      if (src.startsWith('/')) return src.replace(/^\//,'');
+      if (htmlBasePath) {
+        var parts = htmlBasePath.split('/');
+        parts.pop();
+        var srcParts = src.split('/');
+        for (var p of srcParts) {
+          if (p === '..') parts.pop();
+          else if (p !== '.') parts.push(p);
+        }
+        return parts.join('/');
+      }
+      return src;
+    }
+
+    const eocdOff = findEocd(data);
+    let cdCount, cdOff, isZip64 = false;
+
+    if (eocdOff >= 0) {
+      cdCount = data.readUInt16LE(eocdOff + 10);
+      cdOff = data.readUInt32LE(eocdOff + 16);
+      if (cdOff === 0xFFFFFFFF || cdCount === 0xFFFF) {
+        if (eocdOff >= 20) {
+          const z64LocOff = data.readUInt32LE(eocdOff - 20);
+          if (z64LocOff + 56 <= data.length && data.readUInt32LE(z64LocOff) === 0x07064b50) {
+            const z64EocdOff = readUInt64LE(data, z64LocOff + 8);
+            if (z64EocdOff + 56 <= data.length && data.readUInt32LE(z64EocdOff) === 0x06064b50) {
+              isZip64 = true;
+              cdCount = readUInt64LE(data, z64EocdOff + 24);
+              cdOff = readUInt64LE(data, z64EocdOff + 40);
+            }
+          }
+        }
+      }
+    }
+
+    if (eocdOff >= 0) {
+      let cp = cdOff;
+      // 第一遍：提取所有图片到imgMap
+      for (let ci = 0; ci < cdCount && cp + 46 <= data.length; ci++) {
+        if (data.readUInt32LE(cp) !== 0x02014b50) break;
+        let cdMethod = data.readUInt16LE(cp + 10);
+        let cdCSize = data.readUInt32LE(cp + 20);
+        let cdNLen = data.readUInt16LE(cp + 28);
+        let cdELen = data.readUInt16LE(cp + 30);
+        let cdCLen = data.readUInt16LE(cp + 32);
+        let localOff = data.readUInt32LE(cp + 42);
+        let cdName = data.slice(cp + 46, cp + 46 + cdNLen).toString('utf8');
+        if (isZip64 && (cdCSize === 0xFFFFFFFF || localOff === 0xFFFFFFFF)) {
+          let ep = cp + 46 + cdNLen;
+          if (cdCSize === 0xFFFFFFFF) { cdCSize = readUInt64LE(data, ep); ep += 8; }
+          if (localOff === 0xFFFFFFFF) { localOff = readUInt64LE(data, ep); ep += 8; }
+        }
+        var ext = path.extname(cdName).toLowerCase();
+        if (imgExts[ext] && cdCSize > 0 && localOff + 30 <= data.length) {
+          try {
+            var imgData = extractFile(data, localOff, cdCSize, cdMethod);
+            if (imgData && imgData.length < 500000) {
+              imgMap[cdName] = 'data:' + imgExts[ext] + ';base64,' + imgData.toString('base64');
+            }
+          } catch(e4) {}
+        }
+        cp += 46 + cdNLen + cdELen + cdCLen;
+      }
+      // 第二遍：提取HTML
+      cp = cdOff;
+      for (let ci = 0; ci < cdCount && cp + 46 <= data.length; ci++) {
+        if (data.readUInt32LE(cp) !== 0x02014b50) break;
+        let cdMethod = data.readUInt16LE(cp + 10);
+        let cdCSize = data.readUInt32LE(cp + 20);
+        let cdNLen = data.readUInt16LE(cp + 28);
+        let cdELen = data.readUInt16LE(cp + 30);
+        let cdCLen = data.readUInt16LE(cp + 32);
+        let localOff = data.readUInt32LE(cp + 42);
+        let cdName = data.slice(cp + 46, cp + 46 + cdNLen).toString('utf8');
+        if (isZip64 && (cdCSize === 0xFFFFFFFF || localOff === 0xFFFFFFFF)) {
+          let ep = cp + 46 + cdNLen;
+          if (cdCSize === 0xFFFFFFFF) { cdCSize = readUInt64LE(data, ep); ep += 8; }
+          if (localOff === 0xFFFFFFFF) { localOff = readUInt64LE(data, ep); ep += 8; }
+        }
+        if (/\.x?html?$/i.test(cdName)) {
+          htmlCount++;
+          if (cdCSize > 0 && localOff + 30 <= data.length) {
+            try {
+              htmlBasePath = cdName;
+              let raw = extractFile(data, localOff, cdCSize, cdMethod).toString('utf8');
+              let txt = processHtml(raw);
+              if (txt.length > 5) texts.push(txt);
+            } catch(e2) {
+              errors.push(cdName + ': ' + e2.message);
+            }
+          }
+        }
+        cp += 46 + cdNLen + cdELen + cdCLen;
+      }
+    } else {
+      // 第一遍：收集所有条目信息并提取图片
+      let pos = 0;
+      const entries = [];
+      while (pos < data.length - 4) {
+        if (data.readUInt32LE(pos) !== 0x04034b50) break;
+        const nLen = data.readUInt16LE(pos + 26);
+        const eLen = data.readUInt16LE(pos + 28);
+        const method = data.readUInt16LE(pos + 8);
+        const flags = data.readUInt16LE(pos + 6);
+        let cSize = data.readUInt32LE(pos + 18);
+        const name = data.slice(pos + 30, pos + 30 + nLen).toString('utf8');
+        const dStart = pos + 30 + nLen + eLen;
+        if (cSize === 0 && (flags & 0x08)) {
+          for (let si = dStart; si < data.length - 4; si++) {
+            const sig = data.readUInt32LE(si);
+            if (sig === 0x04034b50 || sig === 0x02014b50) { cSize = si - dStart; break; }
+          }
+        }
+        entries.push({name, method, cSize, dStart});
+        // 提取图片
+        var ext2 = path.extname(name).toLowerCase();
+        if (imgExts[ext2] && cSize > 0) {
+          try {
+            var imgData2 = method === 8 ? zlib.inflateRawSync(data.slice(dStart, dStart + cSize)) : data.slice(dStart, dStart + cSize);
+            if (imgData2 && imgData2.length < 500000) {
+              imgMap[name] = 'data:' + imgExts[ext2] + ';base64,' + imgData2.toString('base64');
+            }
+          } catch(e5) {}
+        }
+        pos = dStart + (cSize > 0 ? cSize : 0);
+      }
+      // 第二遍：处理HTML
+      for (const ent of entries) {
+        if (/\.x?html?$/i.test(ent.name) && ent.cSize > 0) {
+          htmlCount++;
+          try {
+            htmlBasePath = ent.name;
+            let raw = ent.method === 8 ? zlib.inflateRawSync(data.slice(ent.dStart, ent.dStart + ent.cSize)).toString('utf8') : data.slice(ent.dStart, ent.dStart + ent.cSize).toString('utf8');
+            let txt = processHtml(raw);
+            if (txt.length > 5) texts.push(txt);
+          } catch(e3) {
+            errors.push(ent.name + ': ' + e3.message);
+          }
+        }
+      }
+    }
+
+    var full = texts.length > 0 ? texts.join('\n\n') : '';
+    if (full.length > 2000000) full = full.substring(0, 2000000) + '\n\n... (内容过长已截断)';
+
+    var result = {
+      ok: texts.length > 0,
+      text: full,
+      htmlCount: htmlCount,
+      zipType: eocdOff >= 0 ? (isZip64 ? 'ZIP64' : '标准ZIP') : '本地文件头模式',
+      errorCount: errors.length,
+      errors: errors.slice(0, 5)
+    };
+    if (texts.length === 0) {
+      result.error = '无法解析此EPUB文件（扫描到' + htmlCount + '个HTML文件，' + errors.length + '个错误）';
+    }
+    return send(res, 200, JSON.stringify(result), 'application/json');
+  } catch(e) {
+    return send(res, 200, JSON.stringify({ok:false,error:'解析失败: '+e.message}), 'application/json');
+  }
+  
+}
+
+// ========== 歌词解析（从 createServer 回调拆出，隔离 V8 TurboFan 对二进制操作的优化）==========
+function handleFilesLyrics(req, res, u) {
+
+  const fp = u.searchParams.get('path') || '';
+  const name = u.searchParams.get('name') || '';
+  if (!fp) return send(res, 200, JSON.stringify({ok:false}), 'application/json');
+  var https = require('https'); var http = require('http');
+  function tryResult(lyrics, source) {
+    if (lyrics && lyrics.trim()) return send(res, 200, JSON.stringify({ok:true, lyrics:lyrics, source:source}), 'application/json');
+    sendOnline();
+  }
+  function sendOnline() {
+    var rawName = (name || path.basename(fp, path.extname(fp))).replace(/\.[^.]+$/,'').trim();
+    var parts = rawName.split(/\s*-\s*/);
+    var artist = parts.length > 1 ? parts[0].trim() : '';
+    var title = parts.length > 1 ? parts.slice(1).join('-').trim() : rawName;
+    title = title.replace(/\[.*?\]|\(.*?\)/g,'').trim();
+    artist = artist.replace(/\[.*?\]|\(.*?\)/g,'').trim();
+    if (!title) { send(res, 200, JSON.stringify({ok:false}), 'application/json'); return; }
+    var keyword = encodeURIComponent((artist ? artist+' ' : '') + title);
+    var surl = 'https://c.y.qq.com/soso/fcgi-bin/client_search_cp?w=' + keyword + '&format=json&p=1&n=1';
+    var sreq = https.get(surl, {headers:{'User-Agent':'Mozilla/5.0'}, timeout:5000}, function(sres) {
+      var sbody = '';
+      sres.on('data', function(c) { sbody += c; });
+      sres.on('end', function() {
+        try {
+          var sj = JSON.parse(sbody);
+          var songs = (sj.data && sj.data.song && sj.data.song.list) || [];
+          if (!songs.length) { send(res, 200, JSON.stringify({ok:false}), 'application/json'); return; }
+          var songmid = songs[0].songmid;
+          var lurl = 'https://c.y.qq.com/lyric/fcgi-bin/fcg_query_lyric_new.fcg?songmid=' + songmid + '&format=json&nobase64=1';
+          var lreq = https.get(lurl, {headers:{'User-Agent':'Mozilla/5.0','Referer':'https://y.qq.com/'}, timeout:5000}, function(lres) {
+            var lbody = '';
+            lres.on('data', function(c) { lbody += c; });
+            lres.on('end', function() {
+              try {
+                var lj = JSON.parse(lbody);
+                if (lj.lyric) return send(res, 200, JSON.stringify({ok:true, lyrics:lj.lyric, source:'online'}), 'application/json');
+                send(res, 200, JSON.stringify({ok:false}), 'application/json');
+              } catch(e3) { send(res, 200, JSON.stringify({ok:false}), 'application/json'); }
+            });
+          });
+          lreq.on('error', function() { send(res, 200, JSON.stringify({ok:false}), 'application/json'); });
+          lreq.setTimeout(5000, function() { lreq.destroy(); send(res, 200, JSON.stringify({ok:false}), 'application/json'); });
+        } catch(e2) { send(res, 200, JSON.stringify({ok:false}), 'application/json'); }
+      });
+    });
+    sreq.on('error', function() { send(res, 200, JSON.stringify({ok:false}), 'application/json'); });
+    sreq.setTimeout(5000, function() { sreq.destroy(); send(res, 200, JSON.stringify({ok:false}), 'application/json'); });
+  }
+  // 1. 同名.lrc文件
+  try {
+    var baseName = path.basename(fp, path.extname(fp));
+    var dirName = path.dirname(fp);
+    var lrcPath = path.join(dirName, '\u6b4c\u8bcd', baseName + '.lrc');
+    if (!fs.existsSync(lrcPath)) lrcPath = fp.replace(/\.[^.]+$/, '.lrc');
+    if (fs.existsSync(lrcPath)) {
+      var lrcContent = fs.readFileSync(lrcPath, 'utf8');
+      if (lrcContent && lrcContent.trim()) return send(res, 200, JSON.stringify({ok:true, lyrics:lrcContent, source:'lrc'}), 'application/json');
+    }
+  } catch(e) {}
+  // 2. 内嵌歌词(ID3)
+  try {
+    var buf = fs.readFileSync(fp);
+    if (buf.length > 3 && buf[0] === 0x49 && buf[1] === 0x44 && buf[2] === 0x33) {
+      var pos = 10 + ((buf[6] & 0x7f) << 21 | (buf[7] & 0x7f) << 14 | (buf[8] & 0x7f) << 7 | (buf[9] & 0x7f));
+      var endPos = Math.min(pos + 1024 * 1024, buf.length);
+      var p = 10;
+      while (p + 10 < endPos) {
+        var fid = buf.toString('latin1', p, p + 4);
+        if (fid === '\x00\x00\x00\x00' || fid.charCodeAt(0) === 0) break;
+        var fSize = buf.readUInt32BE(p + 4);
+        if (fSize <= 0 || p + 10 + fSize > endPos) break;
+        var fFlag = buf.readUInt16BE(p + 8);
+        var fData = buf.slice(p + 10, p + 10 + fSize);
+        if (fid === 'USLT' || fid === 'SYLT') {
+          try {
+            var enc = fData[0];
+            var lang = fData.toString('latin1', 1, 4);
+            var descEnd = fData.indexOf(0x00, 4);
+            var textStart = descEnd >= 0 ? descEnd + 1 : 4;
+            if (textStart >= fData.length) textStart = 4;
+            var lyricText = '';
+            if (enc === 0) {
+              lyricText = fData.toString('latin1', textStart);
+            } else if (enc === 1) {
+              var bom = fData.readUInt16BE(textStart);
+              if (bom === 0xFEFF || bom === 0xFFFE) {
+                lyricText = fData.toString('utf16le', textStart + 2);
+              } else {
+                lyricText = fData.toString('utf16le', textStart);
+              }
+            } else if (enc === 2 || enc === 3) {
+              lyricText = fData.toString('utf8', textStart);
+            } else {
+              lyricText = fData.toString('latin1', textStart);
+            }
+            if (lyricText && lyricText.trim()) return send(res, 200, JSON.stringify({ok:true, lyrics:lyricText, source:'embedded'}), 'application/json');
+          } catch(e2) {}
+        }
+        p += 10 + fSize;
+      }
+    }
+  } catch(e) {}
+  // 3. 在线API
+  sendOnline();
+  return;
+  
+}
+
 // ========== 文件管理器 ==========
 function fileManagerHtml(startPath) {
   var safePath = startPath || '/sdcard/Download/';
