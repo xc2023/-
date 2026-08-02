@@ -29,7 +29,7 @@ function setActiveSource(key) {
 const defaultSource = tvboxSources.bubu; // 保持引用兼容，实际用 getActiveSource()
 
 const PORT = 9975;
-const _DEFAULT_SITE = 'https://bubutv.top';
+const _DEFAULT_SITE = 'https://ds3xy2yunsa.xyz';
 const _SITE_CONFIG_FILE = path.join(__dirname, 'data', 'site_url.json');
 
 function _loadSite() {
@@ -900,7 +900,7 @@ html,body{background:transparent!important}
 <div class="wrap"><div class="topbar"><div style="display:flex;align-items:center;gap:10px"><button class="back" onclick="history.back()">←</button><div class="toptitle">🕐 观看历史</div></div><button class="clearbtn" onclick="if(confirm('确定清空所有历史？')){fetch('/his-clear',{method:'POST'}).then(()=>load())}">清空</button></div><div class="list" id="list"></div><div class="tip" id="tip">加载中...</div></div>
 <script>
 function el(s){return document.querySelector(s)}
-var SITE='https://bubutv.top';
+var SITE='https://ds3xy2yunsa.xyz';
 function openVod(it){var item=Object.assign({},it);if(!/^https?:/.test(item.url)&&!item.url.startsWith('/api/'))item.url='http://'+item.url;if(item.playUrl){var _pu=item.playUrl;if(_pu.charAt(0)==='/')_pu=SITE+_pu;try{parent.postMessage({type:'dsjHideChrome'},'*')}catch(e){}location.href='/player?url='+encodeURIComponent(_pu)+'&title='+encodeURIComponent(item.title||'')+'&vod='+encodeURIComponent(item.url||'')+'&img='+encodeURIComponent(item.img||'');return}if(item.url){fetch('/api/parse-play?url='+encodeURIComponent(item.url)).then(function(r){return r.json()}).then(function(j){if(j.ok&&j.sources&&j.sources[0]&&j.sources[0].episodes&&j.sources[0].episodes.length){var ep=j.sources[0].episodes[0];var u=ep.url.charAt(0)==='/'?SITE+ep.url:ep.url;try{parent.postMessage({type:'dsjHideChrome'},'*')}catch(e){}location.href='/player?url='+encodeURIComponent(u)+'&title='+encodeURIComponent(item.title||ep.title||'')+'&vod='+encodeURIComponent(item.url||'')+'&img='+encodeURIComponent(item.img||'')}else{if(window.parent!==window){try{parent.postMessage({type:'dsjDetail',item:item},'*')}catch(e){location.href=item.url}}else{location.href='/tmdb-page?vodUrl='+encodeURIComponent(item.url)+'&title='+encodeURIComponent(item.title||'')+'&img='+encodeURIComponent(item.img||'')}}}).catch(function(){if(window.parent!==window){try{parent.postMessage({type:'dsjDetail',item:item},'*')}catch(e){location.href=item.url}}else{location.href='/tmdb-page?vodUrl='+encodeURIComponent(item.url)+'&title='+encodeURIComponent(item.title||'')+'&img='+encodeURIComponent(item.img||'')}});return}if(window.parent!==window){try{parent.postMessage({type:'dsjDetail',item:item},'*')}catch(e){location.href=item.url}}else{location.href='/tmdb-page?vodUrl='+encodeURIComponent(item.url)+'&title='+encodeURIComponent(item.title||'')+'&img='+encodeURIComponent(item.img||'')}}
 function timeAgo(ts){var d=Date.now()-ts;if(d<60000)return'刚刚';if(d<3600000)return Math.floor(d/60000)+'分钟前';if(d<86400000)return Math.floor(d/3600000)+'小时前';if(d<604800000)return Math.floor(d/86400000)+'天前';return new Date(ts).toLocaleDateString()}
 function load(){
@@ -965,7 +965,7 @@ io.observe(el('#tip'));load();
 
 // ========== TMDB详情页HTML ==========
 function tmdbPageHtml(d, vodUrl, fallbackImg, cachedSources) {
-  const fullUrl = vodUrl && /^https?:/.test(vodUrl) ? vodUrl : vodUrl && /^[a-z]+:\/\//.test(vodUrl) ? vodUrl : vodUrl ? 'https://bubutv.top' + vodUrl : vodUrl;
+  const fullUrl = vodUrl && /^https?:/.test(vodUrl) ? vodUrl : vodUrl && /^[a-z]+:\/\//.test(vodUrl) ? vodUrl : vodUrl ? 'https://ds3xy2yunsa.xyz' + vodUrl : vodUrl;
   const bgImg = d.backdrop || fallbackImg || '';
   const img = fallbackImg || '';
   const gTags = d.genres.map(g=>`<span class=tag>${esc(g)}</span>`).join('');
@@ -1026,7 +1026,7 @@ body{font-family:-apple-system,sans-serif;background:#0a0e1a;color:#eee}
 <div class=src-section id=srcSection style="display:none"><div class=src-title>🎬 选集播放</div><div class=src-tabs id=srcTabs></div><div class=ep-grid id=epGrid></div></div>
 <script>
 (function(){var logo=document.getElementById('heroLogo');if(logo&&logo.src){logo.style.display='block';logo.onerror=function(){this.style.display='none';var t=document.querySelector('.info .t');if(t)t.style.display=''}}})();
-var VOD_URL='${fullUrl.replace(/'/g, "\\'")}',SITE='https://bubutv.top';
+var VOD_URL='${fullUrl.replace(/'/g, "\\'")}',SITE='https://ds3xy2yunsa.xyz';
 var playSources=${cachedSources?JSON.stringify(cachedSources):'[]'},curSrc=0,showAll=false,curEpUrl='';
 try{var _cached=JSON.parse(localStorage.getItem('youzi_tmdb_state')||'null');if(_cached&&_cached.vodUrl===VOD_URL){curEpUrl=_cached.curEpUrl||'';curSrc=typeof _cached.curSrc==='number'?_cached.curSrc:0}}catch(e){}
 function playFirst(){
@@ -1225,7 +1225,7 @@ video{width:100%;height:100%;object-fit:contain;transition:transform .3s ease}
 <div class=src-bar id=srcBar></div>
 <div class=ep-bar id=epBar></div>
 <script>
-var PLAY_URL=${jsPlayUrl},VOD_URL=${jsVodUrl},SITE='https://bubutv.top';
+var PLAY_URL=${jsPlayUrl},VOD_URL=${jsVodUrl},SITE='https://ds3xy2yunsa.xyz';
 var PRESET_SOURCES=${jsSources};
 var video=document.getElementById('video');
 var MOVIE_TITLE=${jsTitle};
@@ -3080,7 +3080,7 @@ if (pathname === '/api/play-url') {
     var _cachedPage=_pageCache.get(vodUrl);
     if(_cachedPage){return send(res,200,_cachedPage,'text/html; charset=utf-8')}
     var cachedSources=null;var _pc=_playDataCache.get(vodUrl);if(_pc)cachedSources=_pc;
-    const fullVodUrl = vodUrl && /^https?:/.test(vodUrl) ? vodUrl : vodUrl && /^[a-z]+:\/\//.test(vodUrl) ? vodUrl : vodUrl ? 'https://bubutv.top' + vodUrl : vodUrl;
+    const fullVodUrl = vodUrl && /^https?:/.test(vodUrl) ? vodUrl : vodUrl && /^[a-z]+:\/\//.test(vodUrl) ? vodUrl : vodUrl ? 'https://ds3xy2yunsa.xyz' + vodUrl : vodUrl;
     const clean = title.replace(/\(?\d{4}\)?$/,'').replace(/第\d+集$/,'').trim();
     if (!TMDB_KEY) {
       // No TMDB key — still render page with sources
