@@ -1,4 +1,5 @@
-const { execFile } = require("child_process");
+const http = require('http');
+const https = require('https');
 
 // ========== TVBox API ==========
 class TVBoxAPI {
@@ -120,20 +121,31 @@ class TVBoxAPI {
   _fetch(url, headers) {
     var h = headers || this._headers;
     return new Promise(function(resolve, reject) {
-      var args = ['-s', '--max-time', '15', '-L', '--compressed'];
-      for (var k in h) {
-        if (h[k] !== undefined && h[k] !== null) {
-          args.push('-H', k + ': ' + h[k]);
+      var mod = url.startsWith('https') ? https : http;
+      var req = mod.get(url, { headers: h, timeout: 15000 }, function(res) {
+        // Follow redirects
+        if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+          var loc = res.headers.location;
+          if (!/^https?:/.test(loc)) {
+            var u = new URL(url);
+            loc = u.protocol + '//' + u.host + loc;
+          }
+          var mod2 = loc.startsWith('https') ? https : http;
+          var req2 = mod2.get(loc, { headers: h, timeout: 15000 }, function(res2) {
+            var data = '';
+            res2.on('data', function(chunk) { data += chunk; });
+            res2.on('end', function() { resolve(data); });
+          });
+          req2.on('error', reject);
+          req2.on('timeout', function() { req2.destroy(); reject(new Error('timeout')); });
+          return;
         }
-      }
-      args.push(url);
-      execFile('curl', args, { timeout: 20000, maxBuffer: 5 * 1024 * 1024 }, function(err, stdout, stderr) {
-        if (err) {
-          if (err.killed) return reject(new Error('timeout'));
-          return reject(err);
-        }
-        resolve(stdout);
+        var data = '';
+        res.on('data', function(chunk) { data += chunk; });
+        res.on('end', function() { resolve(data); });
       });
+      req.on('error', reject);
+      req.on('timeout', function() { req.destroy(); reject(new Error('timeout')); });
     });
   }
   async get(api, params) {
@@ -157,7 +169,6 @@ class TVBoxAPI {
       var json = JSON.parse(data);
       if (json.code !== 200) return { ok: false, error: json.msg, categories: [], lunbos: [], items: [] };
       var d = json.data || {};
-      var self = this;
       var self = this;
       var categories = (d.categories || []).map(function(c) {
         return { type_id: c.type_id, type_name: c.type_name, videos: (c.videos || []).map(function(v) { return self._fmtVod(v); }) };
@@ -198,7 +209,6 @@ class TVBoxAPI {
   }
   async rank(page) {
     try {
-      // 用首页接口获取分类及每个分类下的推荐影片，按分类组装排行榜数据
       var data = await this.get('/api.php/app/index/home');
       var json = JSON.parse(data);
       if (json.code !== 200) return { ok: false, error: json.msg, items: [] };
@@ -238,7 +248,6 @@ class TVBoxAPI {
           });
         });
       });
-      // 如果没有分类数据，退回推荐列表
       if (!items.length && d.recommend) {
         d.recommend.forEach(function(v, i) {
           var formatted = self._fmtVod(v);
@@ -311,7 +320,6 @@ class TVBoxAPI {
             if (!title2) continue;
             var url2 = idx2 === -1 ? '' : ep2.substring(idx2 + 1);
           if (url2) {
-            // 统一 @@ 格式：from=site_key，直链标记2/需解析标记1，使 play() 能调 decode
             var ds2 = /\.(m3u8|mp4|flv|ts|aac)(\?|$)/i.test(url2) ? '2' : '1';
             eps2.push({ name: title2, url: item.site_key + '@@' + ds2 + '@@@@@@' + url2 });
           }
@@ -319,7 +327,7 @@ class TVBoxAPI {
           if (eps2.length > 0) sources.push({ name: item.site_name || item.site_key, episodes: eps2 });
         }
       } catch(e) {}
-      return { ok: true, vod: { vod_id: vod.vod_id, vod_name: vod.vod_name, vod_pic: vod.vod_pic, vod_year: vod.vod_year, vod_area: vod.vod_area, vod_actor: vod.vod_actor, vod_director: vod.vod_director, vod_content: vod.vod_content, vod_class: vod.vod_class, type_name: vod.type_name }, sources: sources };
+      return { ok: true, vod: { vod_id: vod.vod_id, vod_name: vod.vod_name, vod_pic: vod.vod_pic, vod_year: vod.vod_year, vod_area: vod.vod_area, vod_actor: vod.vod_actor, vod_director: vod.vod_director, vod_content: vod.vod_content, vod_class: vod.vod_class, vod_remarks: vod.vod_remarks, vod_duration: vod.vod_duration, vod_lang: vod.vod_lang, vod_douban_score: vod.vod_douban_score, type_name: vod.type_name }, sources: sources };
     } catch(e) {
       console.error('[TVBox] detail error:', e.message);
       return { ok: false, error: e.message };
@@ -336,7 +344,6 @@ class TVBoxAPI {
     try {
       var UA = { 'User-Agent': 'okhttp/4.12.0' };
       var isVideo = function(u){ return u && /^https?:\/\//i.test(u) && /(m3u8|mp4|flv|ts|aac)/i.test(u); };
-      // 外部 iframe 解析器（仅用于官网播放页兜底：腾讯/优酷/爱奇艺等）
       var DEFAULT_PARSER = 'https://xn--qvr2v.850088.xyz/player/?url=';
       var parseIframe = function(u, parser){
         var p = parser || DEFAULT_PARSER;
@@ -359,32 +366,24 @@ class TVBoxAPI {
         realUrl = parts.slice(3).join('@@');
       }
 
-      // 1) 直链视频（参考 布布影视.js：m3u8/mp4/flv/ts/aac 直接返回）
       if (isVideo(realUrl)) return { ok: true, url: realUrl, header: UA };
-      // decode_status=2 视为直链
       if (decodeStatus === '2' && realUrl && /^https?:/.test(realUrl)) return { ok: true, url: realUrl, header: UA };
 
-      // 2) 服务端 decode 接口（对齐布布影视.js：用 genHeaders 精简header + 手动拼接URL）
       if (realUrl && from) {
         try {
           var decodeData = await this.decodeUrl(realUrl, from);
           var dj = JSON.parse(decodeData);
           if (dj && dj.data) {
             var du = String(dj.data).trim();
-            // decode 返回新内容（非原样）才采用；原样返回说明 decode 无效（无套餐/获取失败）
             if (du && du !== realUrl) {
-              // 参考布布影视.js：decode 成功直接返回 play.data，不管格式
               return { ok: true, url: du, header: UA };
             }
           }
         } catch(e) { console.error('[TVBox] decode error:', e.message); }
       }
 
-      // 3) realUrl 为 http 非视频（官网播放页：腾讯/优酷/爱奇艺等）→ 外部 iframe 解析器兜底
       if (realUrl && /^https?:/.test(realUrl)) return parseIframe(realUrl, parseUrl);
 
-      // 4) 令牌（JD-/co_ 等）decode 失败 → 不走外部解析器，返回失败
-      //    （外部解析器不认识这些加密令牌，走过去也是白屏）
       return { ok: false, error: 'decode failed (no subscription or token invalid)' };
     } catch(e) {
       return { ok: false, error: e.message };
@@ -425,12 +424,10 @@ const tvboxSources = {
   })
 };
 
-// 源元数据（名称、logo）
 const sourceMeta = {
   bubu: { name: '布布影视', logo: 'https://bubutv.top/adad/LOGO1-removebg-preview.png' },
   yunduo: { name: '云朵影视', logo: '' },
   damahou: { name: '大马猴影视', logo: '' }
 };
-
 
 module.exports = { TVBoxAPI, tvboxSources, sourceMeta };
