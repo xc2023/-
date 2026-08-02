@@ -1,4 +1,4 @@
-const http = require('http');    
+const http = require('http');     
 const https = require('https');  
 const { execFile } = require('child_process');
 const { URL } = require('url');
@@ -542,6 +542,7 @@ ${COMMON_STYLE}
 <div id="sections"></div>
 <div class="gr" id="grid"></div>
 <div class="tip" id="tip">准备加载...</div>
+<div id="loadMore" style="display:none;text-align:center;padding:12px"><button onclick="load()" style="padding:8px 24px;border-radius:20px;background:rgba(79,195,247,.2);border:1px solid rgba(79,195,247,.35);color:#4fc3f7;font-size:14px;cursor:pointer">加载更多</button></div>
 </div>
 <script>
 var _isBrowser=window.parent===window;
@@ -556,6 +557,7 @@ if(_isBrowser){
   el('#searchBtn').onclick=function(){var q=el('#searchInput').value.trim();if(q)location.href='/search?wd='+encodeURIComponent(q)};
   el('#searchInput').onkeydown=function(e){if(e.key==='Enter'){var q=this.value.trim();if(q)location.href='/search?wd='+encodeURIComponent(q)}};
   el('#fsBtn').onclick=function(){var de=document.documentElement;if(!document.fullscreenElement&&!document.webkitFullscreenElement){if(de.requestFullscreen)de.requestFullscreen();else if(de.webkitRequestFullscreen)de.webkitRequestFullscreen()}else{if(document.exitFullscreen)document.exitFullscreen();else if(document.webkitExitFullscreen)document.webkitExitFullscreen()}};
+  if(cid===''){
   fetch('/home-api').then(function(r){return r.json()}).then(function(j){
     if(!j.ok||!j.lunbos||!j.lunbos.length)return;
     var lunbos=j.lunbos;var carEl=el('#carousel');var inner=el('#carInner');var dots=el('#carDots');
@@ -592,9 +594,15 @@ if(_isBrowser){
       el('#tip').style.display='none';
     }
   }).catch(function(){});
+  } // end if cid===''
+  else {
+    // Category page - make sure grid and tip are visible
+    el('#grid').style.display='';
+    el('#tip').style.display='';
+  }
 }
 /* 分类导航 */
-var navCats=[{name:'电影',cid:'dianying'},{name:'剧集',cid:'2'},{name:'综艺',cid:'zongyi'},{name:'动漫',cid:'dongman'},{name:'排行榜',cid:'_rank'}];
+var navCats=[{name:'首页',cid:''},{name:'电影',cid:'dianying'},{name:'剧集',cid:'2'},{name:'综艺',cid:'zongyi'},{name:'动漫',cid:'dongman'},{name:'排行榜',cid:'_rank'}];
 if(!_isBrowser){el('#ftabs').style.display='none'}else{
 var navHtml='';
 navCats.forEach(function(c){var isCur=c.cid===baseCid;navHtml+='<a href="/category?cid='+c.cid+'&name='+encodeURIComponent(c.name)+'" style="flex-shrink:0;padding:6px 16px;border-radius:20px;font-size:13px;font-weight:600;background:'+(isCur?'rgba(79,195,247,.25)':'rgba(255,255,255,.08)')+';border:1px solid '+(isCur?'rgba(79,195,247,.5)':'rgba(255,255,255,.12)')+';color:'+(isCur?'#4fc3f7':'rgba(255,255,255,.7)')+';cursor:pointer;text-decoration:none;white-space:nowrap">'+c.name+'</a>'});
@@ -612,7 +620,7 @@ function load(){
     page=next;
     j.items.forEach(function(it){el('#grid').appendChild(card(it));count++});
     el('#tip').textContent='已加载 '+count+' 部。';
-  }).catch(e=>{el('#tip').textContent='加载失败：'+(e.message||e)}).finally(()=>loading=false);
+  }).catch(e=>{el('#tip').textContent='加载失败：'+(e.message||e)}).finally(function(){loading=false;var btn=el('#loadMore');if(btn)btn.style.display=finished?'none':'block'});
 }
 function renderFilters(){
   var c=el('#filterTabs');
@@ -691,8 +699,9 @@ function rankHtml() {
   return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>热搜榜</title>
 <style>
+html,body{background:#0a0e1a!important;min-height:100vh}
 ${COMMON_STYLE}
-*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 .tabs{display:flex;gap:8px;padding:0 0 12px 0;overflow-x:auto;-webkit-overflow-scrolling:touch}.tabs::-webkit-scrollbar{display:none}
 .tab{flex-shrink:0;padding:6px 16px;border-radius:20px;font-size:13px;font-weight:600;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.15);cursor:pointer;transition:all .2s;white-space:nowrap}
 .tab.on{background:rgba(255,255,255,.3);border-color:rgba(255,255,255,.4)}
@@ -705,26 +714,51 @@ ${COMMON_STYLE}
 .rn.t1{background:#FF4757}.rn.t2{background:#FF6B81}.rn.t3{background:#FFA502}
 .rt{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1}
 .rs{font-size:10px;color:rgba(255,255,255,.4);flex-shrink:0}
-.row{display:flex;gap:12px;background:rgba(255,255,255,.06);border-radius:16px;overflow:hidden;border:1px solid rgba(255,255,255,.1);padding:10px;margin-bottom:10px;cursor:pointer}
+.row{display:flex;gap:12px;background:rgba(255,255,255,.06);border-radius:16px;overflow:hidden;border:1px solid rgba(255,255,255,.1);padding:10px;margin-bottom:10px;cursor:pointer;height:170px}
 .row:active{transform:scale(.98)}
 .sposter{position:relative;flex:0 0 112px;width:112px;height:150px;border-radius:12px;overflow:hidden}
 .sposter img{width:100%;height:100%;object-fit:cover;display:block}
-.sinfo{min-width:0;flex:1;display:flex;flex-direction:column;padding:0}
+.sinfo{min-width:0;flex:1;display:flex;flex-direction:column;padding:0;overflow:hidden}
 .sname{font-size:16px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex-shrink:0;line-height:1.3}
-.smeta{font-size:11px;color:rgba(255,255,255,.55);flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.4;margin-top:auto;padding-top:2px}
-.sactors{font-size:12px;color:rgba(255,193,112,.85);line-height:1.4;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;margin-top:4px;flex:1;min-height:0}
-.sbottom{display:flex;align-items:center;gap:8px;margin-top:auto;flex-shrink:0;font-size:11px;color:rgba(255,255,255,.45);line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.sbottom-item{display:flex;align-items:center;gap:3px}.sbottom-sep{color:rgba(255,255,255,.2)}
+.sactors{font-size:12px;color:rgba(255,193,112,.85);line-height:1.4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex-shrink:0;margin-top:4px;min-height:17px}
+.sintro{font-size:11px;color:rgba(255,255,255,.55);line-height:1.5;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;overflow:hidden;flex:1;min-height:0;margin-top:4px}
+.sbottom{display:flex;align-items:center;gap:8px;flex-shrink:0;font-size:11px;color:rgba(255,255,255,.45);line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:4px}.sbottom-item{display:flex;align-items:center;gap:3px}.sbottom-sep{color:rgba(255,255,255,.2)}
 .tip{text-align:center;padding:18px;color:rgba(255,255,255,.7);font-size:13px}
 </style></head><body>${COMMON_ANTI_COPY}
 <div class="wrap"><div class="tabs" id="tabs"></div><div id="list"></div><div class="tip" id="tip">准备加载...</div></div>
 <script>
 var tabs=[{name:'分类排行',tab:0},{name:'全部影片',tab:1}];
 var curTab=0,page=0,loading=false,finished=false,count=0,reqId=0;
+var _detailCache={};
 function el(s){return document.querySelector(s)}
 function initTabs(){var c=document.getElementById('tabs');tabs.forEach(function(t,i){var b=document.createElement('div');b.className='tab'+(i===0?' on':'');b.textContent=t.name;b.onclick=function(){document.querySelectorAll('.tab').forEach(function(x){x.className='tab'});b.className='tab on';curTab=t.tab;page=0;finished=false;count=0;loading=false;reqId++;el('#list').innerHTML='';load()};c.appendChild(b)})}
 function openVod(it){var item=Object.assign({},it);if(!/^https?:/.test(item.url)&&!item.url.startsWith('/api/'))item.url='http://'+item.url;if(window.parent!==window){try{parent.postMessage({type:'dsjDetail',item:item},'*')}catch(e){location.href=item.url}}else{location.href='/tmdb-page?vodUrl='+encodeURIComponent(item.url)+'&title='+encodeURIComponent(item.title||'')+'&img='+encodeURIComponent(item.img||'')}}
-function cRow(it){var d=document.createElement('div');d.className='row';var topColors={'1':'rgba(255,71,87,.9)','2':'rgba(255,107,129,.9)','3':'rgba(255,165,2,.9)'};var topN=parseInt(it.top);var topBg=topColors[it.top]||(topN>=4?'rgba(255,255,255,.18)':'rgba(255,71,87,.9)');var sposter=document.createElement('div');sposter.className='sposter';var img=document.createElement('img');img.loading='lazy';img.src=it.img||'';img.onerror=function(){this.src='https://picsum.photos/seed/'+Math.floor(Math.random()*1000)+'/300/400'};sposter.appendChild(img);if(it.top){var topEl=document.createElement('span');topEl.style.cssText='position:absolute;top:4px;left:4px;z-index:2;background:'+topBg+';color:#fff;font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px';topEl.textContent=it.top;sposter.appendChild(topEl)}if(it.note){var noteEl=document.createElement('span');noteEl.style.cssText='position:absolute;right:7px;bottom:7px;left:7px;text-align:right;font-size:12px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:0 1px 3px #000,0 0 6px rgba(0,0,0,.75)';noteEl.textContent=it.note;sposter.appendChild(noteEl)}d.appendChild(sposter);var sinfo=document.createElement('div');sinfo.className='sinfo';var sname=document.createElement('div');sname.className='sname';sname.textContent=it.title;sinfo.appendChild(sname);if(it.actors){var sactors=document.createElement('div');sactors.className='sactors';sactors.textContent='\u{1F916} '+it.actors;sinfo.appendChild(sactors)}var parts=[];if(it.catTitle)parts.push(it.catTitle);if(it.year)parts.push(it.year);if(it.area)parts.push(it.area);if(parts.length){var sbottom=document.createElement('div');sbottom.className='sbottom';sbottom.innerHTML=parts.map(function(p){return'<span class="sbottom-item">'+p+'</span>'}).join('<span class="sbottom-sep"> | </span>');sinfo.appendChild(sbottom)}d.appendChild(sinfo);d.onclick=function(){openVod(it)};return d}
-function load(){if(loading||finished)return;loading=true;var rid=reqId,next=page+1;el('#tip').textContent='加载中...';fetch('/rank-api?page='+next+'&tab='+curTab).then(r=>r.json()).then(function(j){if(!j.ok)throw new Error(j.error||'fail');if(rid!==reqId)return;page=next;if(j.finished)finished=true;if(!j.items.length){finished=true;el('#tip').textContent=count?'已全部加载':'暂无数据';loading=false;return}var list=el('#list');if(curTab===0){var grid=list.querySelector('.grid2');if(!count){grid=document.createElement('div');grid.className='grid2';list.appendChild(grid)}var cats={};j.items.forEach(function(it){var cat=it.catTitle||'';if(!cats[cat])cats[cat]=[];cats[cat].push(it)});Object.keys(cats).forEach(function(cat){var card=document.createElement('div');card.className='cat-card';var catNameEl=document.createElement('div');catNameEl.className='cat-name';catNameEl.textContent=cat;card.appendChild(catNameEl);cats[cat].slice(0,10).forEach(function(it){var r=document.createElement('div');r.className='rit';var n=parseInt(it.tag)||1;var rn=document.createElement('div');rn.className='rn '+(n<=3?'t'+n:'');rn.textContent=n;r.appendChild(rn);var rt=document.createElement('div');rt.className='rt';rt.textContent=it.title;r.appendChild(rt);if(it.desc){var rs=document.createElement('div');rs.className='rs';rs.textContent=it.desc;r.appendChild(rs)}r.onclick=function(){openVod(it)};card.appendChild(r)});grid.appendChild(card)})}else{j.items.forEach(function(it){list.appendChild(cRow(it));count++})}count+=j.items.length;el('#tip').textContent=finished?'已全部加载（共'+count+'部）':'已加载 '+count+' 部';loading=false}).catch(function(e){if(rid!==reqId)return;loading=false;el('#tip').innerHTML='<span style="color:#ff6b6b">加载失败：'+(e.message||e)+'</span><br><button onclick="loading=false;load()" style="margin-top:8px;padding:6px 16px;border-radius:8px;border:0;background:rgba(255,255,255,.2);color:#fff;cursor:pointer">重试</button>'})}
+function getVodId(it){var m=(it.url||'').match(/vod_id=(\\d+)/);return m?m[1]:''}
+function cRow(it){var d=document.createElement('div');d.className='row';var topColors={'1':'rgba(255,71,87,.9)','2':'rgba(255,107,129,.9)','3':'rgba(255,165,2,.9)'};var topN=parseInt(it.top);var topBg=topColors[it.top]||(topN>=4?'rgba(255,255,255,.18)':'rgba(255,71,87,.9)');var sposter=document.createElement('div');sposter.className='sposter';var img=document.createElement('img');img.loading='lazy';img.src=it.img||'';img.onerror=function(){this.src='https://picsum.photos/seed/'+Math.floor(Math.random()*1000)+'/300/400'};sposter.appendChild(img);if(it.top){var topEl=document.createElement('span');topEl.style.cssText='position:absolute;top:4px;left:4px;z-index:2;background:'+topBg+';color:#fff;font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px';topEl.textContent=it.top;sposter.appendChild(topEl)}if(it.note){var noteEl=document.createElement('span');noteEl.style.cssText='position:absolute;right:7px;bottom:7px;left:7px;text-align:right;font-size:12px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:0 1px 3px #000,0 0 6px rgba(0,0,0,.75)';noteEl.textContent=it.note;sposter.appendChild(noteEl)}d.appendChild(sposter);var sinfo=document.createElement('div');sinfo.className='sinfo';var sname=document.createElement('div');sname.className='sname';sname.textContent=it.title;sinfo.appendChild(sname);var sactors=document.createElement('div');sactors.className='sactors';sactors.textContent='';sinfo.appendChild(sactors);var sintro=document.createElement('div');sintro.className='sintro';sinfo.appendChild(sintro);var parts=[];if(it.catTitle)parts.push(it.catTitle);if(it.year)parts.push(it.year);if(it.area)parts.push(it.area);if(parts.length){var sbottom=document.createElement('div');sbottom.className='sbottom';sbottom.innerHTML=parts.map(function(p){return'<span class="sbottom-item">'+p+'</span>'}).join('<span class="sbottom-sep"> | </span>');sinfo.appendChild(sbottom)}d.appendChild(sinfo);d.onclick=function(){openVod(it)};d._vid=getVodId(it);d._sactors=sactors;d._sintro=sintro;var _cv=d._vid;if(_cv&&_detailCache[_cv]){var _cj=_detailCache[_cv];if(_cj.actors)sactors.textContent='\\u{1F916} '+_cj.actors;if(_cj.content)sintro.textContent=_cj.content}return d}
+// tab=1 全部影片：列表渲染后渐进式加载每个影片的演员和简介
+function loadAllDetails(items){
+  var queue=[];
+  items.forEach(function(it){var vid=getVodId(it);if(vid&&(!_detailCache[vid]))queue.push({vid:vid,it:it})});
+  var idx=0,BATCH=4;
+  function next(){
+    if(idx>=queue.length)return;
+    var batch=queue.slice(idx,idx+BATCH);idx+=BATCH;
+    batch.forEach(function(q){
+      fetch('/rank-detail-api?vod_id='+q.vid).then(function(r){return r.json()}).then(function(j){
+        if(!j.ok)return;
+        _detailCache[q.vid]=j;
+        var rows=el('#list').querySelectorAll('.row');
+        rows.forEach(function(row){if(row._vid===q.vid){
+          if(j.actors)row._sactors.textContent='\\u{1F916} '+j.actors;
+          if(j.content)row._sintro.textContent=j.content;
+        }});
+      }).catch(function(){});
+    });
+    setTimeout(next,300);
+  }
+  next();
+}
+function load(){if(loading||finished)return;loading=true;var rid=reqId,next=page+1;el('#tip').textContent='加载中...';fetch('/rank-api?page='+next+'&tab='+curTab).then(r=>r.json()).then(function(j){if(!j.ok)throw new Error(j.error||'fail');if(rid!==reqId)return;page=next;if(j.finished)finished=true;if(!j.items.length){finished=true;el('#tip').textContent=count?'已全部加载':'暂无数据';loading=false;return}var list=el('#list');if(curTab===0){var grid=list.querySelector('.grid2');if(!count){grid=document.createElement('div');grid.className='grid2';list.appendChild(grid)}var cats={};j.items.forEach(function(it){var cat=it.catTitle||'';if(!cats[cat])cats[cat]=[];cats[cat].push(it)});Object.keys(cats).forEach(function(cat){var card=document.createElement('div');card.className='cat-card';var catNameEl=document.createElement('div');catNameEl.className='cat-name';catNameEl.textContent=cat;card.appendChild(catNameEl);cats[cat].slice(0,10).forEach(function(it){var r=document.createElement('div');r.className='rit';var n=parseInt(it.tag)||1;var rn=document.createElement('div');rn.className='rn '+(n<=3?'t'+n:'');rn.textContent=n;r.appendChild(rn);var rt=document.createElement('div');rt.className='rt';rt.textContent=it.title;r.appendChild(rt);if(it.desc){var rs=document.createElement('div');rs.className='rs';rs.textContent=it.desc;r.appendChild(rs)}r.onclick=function(){openVod(it)};card.appendChild(r)});grid.appendChild(card)})}else{j.items.forEach(function(it){list.appendChild(cRow(it));count++})}count+=j.items.length;el('#tip').textContent=finished?'已全部加载（共'+count+'部）':'已加载 '+count+' 部';loading=false;if(curTab===1&&next===1){loadAllDetails(j.items)}}).catch(function(e){if(rid!==reqId)return;loading=false;el('#tip').innerHTML='<span style="color:#ff6b6b">加载失败：'+(e.message||e)+'</span><br><button onclick="loading=false;load()" style="margin-top:8px;padding:6px 16px;border-radius:8px;border:0;background:rgba(255,255,255,.2);color:#fff;cursor:pointer">重试</button>'})}
 var io=new IntersectionObserver(function(es){if(es[0].isIntersecting)load()},{rootMargin:'500px'});
 io.observe(el('#tip'));initTabs();load();
 <\/script></body></html>`;
@@ -996,20 +1030,11 @@ var VOD_URL='${fullUrl.replace(/'/g, "\\'")}',SITE='https://bubutv.top';
 var playSources=${cachedSources?JSON.stringify(cachedSources):'[]'},curSrc=0,showAll=false,curEpUrl='';
 try{var _cached=JSON.parse(localStorage.getItem('youzi_tmdb_state')||'null');if(_cached&&_cached.vodUrl===VOD_URL){curEpUrl=_cached.curEpUrl||'';curSrc=typeof _cached.curSrc==='number'?_cached.curSrc:0}}catch(e){}
 function playFirst(){
-  if(playSources.length){
-    var src=playSources[curSrc];
-    if(src&&src.episodes&&src.episodes.length){
-      var epIdx=0;
-      if(curEpUrl){for(var _i=0;_i<src.episodes.length;_i++){if(src.episodes[_i].url===curEpUrl||decodeURIComponent(src.episodes[_i].url)===curEpUrl){epIdx=_i;break}}}
-      var ep=src.episodes[epIdx];curEpUrl=ep.url;
-      var u=ep.url.charAt(0)==='/'?SITE+ep.url:ep.url;
-      try{localStorage.setItem('youzi_tmdb_state',JSON.stringify({vodUrl:VOD_URL,curEpUrl:ep.url,curSrc:curSrc}))}catch(e){}
-      try{var _t=document.querySelector('.info .t'),_b=document.querySelector('.bg img'),_hi=document.getElementById('_hi');var _mt=_t&&_t.textContent?_t.textContent:(document.title||ep.title);sessionStorage.setItem('youzi_tmdb_meta_'+VOD_URL,JSON.stringify({title:_mt,backdrop:_b?_b.src:'',img:_hi?_hi.dataset.img:''}))}catch(e){}
-      window.location.href='/player?url='+encodeURIComponent(u)+'&title='+encodeURIComponent(ep.title)+'&vod='+encodeURIComponent(VOD_URL);
-      return;
-    }
-  }
-  loadPlay()
+  var _playUrl=VOD_URL;
+  var _m=VOD_URL.match(/vod_id=(\d+)/);
+  if(_m){_playUrl=SITE+'/api.php/app/vod/get_detail?vod_id='+_m[1]}
+  // 通知父页面打开C页面并关闭TMDB页面
+  try{parent.postMessage({type:'dsjPlayC',url:_playUrl},'*')}catch(e){}
 }
 function loadPlay(){
   var el=document.getElementById('srcSection');
@@ -2048,7 +2073,7 @@ const server = http.createServer((req, res) => {
 var v=document.getElementById("v"),tt=document.getElementById("tt"),topbar=document.getElementById("topbar"),ctrlbar=document.getElementById("ctrlbar"),routeBtn=document.getElementById("routeBtn");
 var playBtn=document.getElementById("playBtn"),pFill=document.getElementById("pFill"),pDot=document.getElementById("pDot"),pBuffer=document.getElementById("pBuffer"),progressWrap=document.getElementById("progressWrap");
 var timeLabel=document.getElementById("timeLabel"),volIcon=document.getElementById("volIcon"),volFill=document.getElementById("volFill"),volBar=document.getElementById("volBar"),volDot=document.getElementById("volDot");
-var allUrls=[],curIdx=0,h=null,LP="http://127.0.0.1:9976/live-proxy?url=";
+var allUrls=[],curIdx=0,h=null,LP="http://127.0.0.1:9975/live-proxy?url=";
 var _ctx=document.createElement("canvas").getContext("2d");
 var channelList=[],channelIdx=0,allChannels=[];
 var _curChannelLogo='';
@@ -2240,7 +2265,7 @@ function _loadChEpgBatch(){
   _chEpgBatchLoaded=true;
   try{
     var x=new XMLHttpRequest();
-    x.open('GET','http://127.0.0.1:9976/epg-all',true);
+    x.open('GET','http://127.0.0.1:9975/epg-all',true);
     x.timeout=15000;
     x.onload=function(){
       try{
@@ -2288,7 +2313,7 @@ function _epgLoad(ch){
   try{
     var el=document.getElementById('epgInfo');if(!el)return;
     var x=new XMLHttpRequest();
-    x.open('GET','http://127.0.0.1:9976/epg?ch='+encodeURIComponent(ch),true);
+    x.open('GET','http://127.0.0.1:9975/epg?ch='+encodeURIComponent(ch),true);
     x.timeout=8000;
     x.onload=function(){
       try{
@@ -2663,14 +2688,24 @@ window.addEventListener('orientationchange',function(){if(_epgResizeTimer)clearT
   // 分类API（取影片库 show，含筛选）
 if (pathname === '/api') {
     try {
-      const cid = u.searchParams.get('cid') || 'dianying';
+      const cid = u.searchParams.get('cid') || '';
       const filter = u.searchParams.get('filter') || '';
       const page = parseInt(u.searchParams.get('page') || '1');
       
       // Map cid to category name
-      const cidNameMap = { 'dianying': '电影', '2': '剧集', 'zongyi': '综艺', 'dongman': '动漫', '20': '短剧' };
+      const cidNameMap = { '': '首页', 'dianying': '电影', '2': '剧集', 'zongyi': '综艺', 'dongman': '动漫', '20': '短剧' };
       const typeName = cidNameMap[cid] || cid;
       
+      // 各分类的剧情类型筛选列表（TVBox API 用 class 参数筛选）
+      var genreFilters = {
+        '电影': ['动作','喜剧','爱情','科幻','悬疑','惊悚','恐怖','剧情','犯罪','冒险','奇幻','战争','武侠','动画','历史','传记','灾难','音乐'],
+        '剧集': ['古装','都市','喜剧','家庭','警匪','言情','军事','武侠','悬疑','历史','青春','科幻','法律','农村','情感','谍战'],
+        '综艺': ['情感','访谈','音乐','选秀','娱乐','脱口秀','真人秀','竞技','美食','游戏','旅游','文化','体育','少儿'],
+        '动漫': ['热血','搞笑','日漫','国漫','欧美','治愈','少女','机战','战斗','恋爱','校园','奇幻','冒险','科幻','推理']
+      };
+      var typeFilters = genreFilters[typeName] || [];
+      var filterOpts = [{name: '全部', slug: ''}].concat(typeFilters.map(function(g) { return {name: g, slug: 'class=' + g}; }));
+
       // Parse filter string
       let filters = {};
       if (filter) {
@@ -2681,7 +2716,7 @@ if (pathname === '/api') {
       }
       
       return getActiveSource().category(typeName, page, filters).then(result => {
-        send(res, 200, JSON.stringify({ok:result.ok, items:result.items||[], filters:null}), 'application/json');
+        send(res, 200, JSON.stringify({ok:result.ok, items:result.items||[], filters: page===1 ? filterOpts : null}), 'application/json');
       }).catch(e => {
         send(res, 200, JSON.stringify({ok:false,error:e.message}), 'application/json');
       });
@@ -2692,7 +2727,7 @@ if (pathname === '/api') {
 
   // 分类页
   if (pathname === '/category') {
-    const cid = u.searchParams.get('cid') || 'dianying';
+    const cid = u.searchParams.get('cid') || '';
     const name = u.searchParams.get('name') || '电影';
     return send(res, 200, categoryHtml(cid, name), 'text/html; charset=utf-8');
   }
@@ -2757,6 +2792,29 @@ if (pathname === '/search-api') {
     });
   }
 
+  // 排行榜单个影片详情（点击展开时懒加载，不拖慢列表渲染）
+  if (pathname === '/rank-detail-api') {
+    const vodId = (u.searchParams.get('vod_id') || '').trim();
+    if (!vodId) return send(res, 200, JSON.stringify({ok:false, error:'missing vod_id'}), 'application/json');
+    return getActiveSource().detail(vodId).then(result => {
+      if (!result.ok) return send(res, 200, JSON.stringify({ok:false, error:result.error}), 'application/json');
+      var v = result.vod || {};
+      send(res, 200, JSON.stringify({
+        ok: true,
+        actors: v.vod_actor || '',
+        director: v.vod_director || '',
+        content: v.vod_content || '',
+        year: v.vod_year || '',
+        area: v.vod_area || '',
+        class: v.vod_class || '',
+        remarks: v.vod_remarks || '',
+        score: v.vod_douban_score || ''
+      }), 'application/json');
+    }).catch(e => {
+      send(res, 200, JSON.stringify({ok:false, error:e.message}), 'application/json');
+    });
+  }
+
   // 专题页/API
   if (pathname === '/topic') return send(res, 200, topicHtml(), 'text/html; charset=utf-8');
 
@@ -2813,13 +2871,46 @@ if (pathname === '/api/parse-play') {
     return getActiveSource().detail(vodId).then(result => {
       if (!result.ok) return send(res, 200, JSON.stringify({ok:false,error:result.error}), 'application/json');
       
-      // Convert to expected format
+      // Convert to expected format — 同时返回 par/sid 供C页面lazyRule直接调用decode（参照云朵解析）
       const sources = (result.sources || []).map(src => ({
         name: src.name,
-        episodes: src.episodes.map(ep => ({ title: ep.name, url: ep.url }))
+        episodes: src.episodes.map(function(ep) {
+          // 从 @@ 格式中提取 par（真实播放地址）和 sid（线路标识）
+          var parts = (ep.url || '').split('@@');
+          var par = '', sid = src.name;
+          if (parts.length >= 5) {
+            sid = parts[0];
+            par = parts.slice(4).join('@@');
+          } else if (parts.length >= 4) {
+            sid = parts[0];
+            par = parts.slice(3).join('@@');
+          } else {
+            par = ep.url;
+          }
+          return { title: ep.name, url: ep.url, par: par, sid: sid };
+        })
       }));
       
-      send(res, 200, JSON.stringify({ok:true, sources}), 'application/json');
+      // 同时返回vod元数据（海报/主演/简介等），供C页面展示
+      var vod = result.vod || {};
+      var vodInfo = {
+        vod_id: vod.vod_id,
+        vod_name: vod.vod_name,
+        vod_pic: vod.vod_pic,
+        vod_year: vod.vod_year,
+        vod_area: vod.vod_area,
+        vod_actor: vod.vod_actor,
+        vod_director: vod.vod_director,
+        vod_content: vod.vod_content,
+        vod_class: vod.vod_class,
+        vod_remarks: vod.vod_remarks,
+        vod_duration: vod.vod_duration,
+        vod_lang: vod.vod_lang,
+        vod_douban_score: vod.vod_douban_score,
+        type_name: vod.type_name
+      };
+      
+      send(res, 200, JSON.stringify({ok:true, vod: vodInfo, sources, site: SITE}), 'application/json');
     }).catch(e => {
       send(res, 200, JSON.stringify({ok:false,error:e.message}), 'application/json');
     });
@@ -2888,6 +2979,34 @@ if (pathname === '/api/parse-play') {
     return send(res, 200, playerHtml(playUrl, title, vodUrl, img, parsedSources), 'text/html; charset=utf-8');
   }
 
+  // decode 接口（参照云朵解析：直接传 par + sid，代理用当前源签名调 decode）
+  if (pathname === '/api/decode') {
+    const par = u.searchParams.get('par') || '';
+    const sid = u.searchParams.get('sid') || '';
+    if (!par) return send(res, 200, JSON.stringify({ok:false,error:'missing par'}), 'application/json');
+    
+    // 1) 直链视频直接返回
+    if (/^https?:\/\/.+\.(m3u8|mp4|flv|ts|aac)(\?|$)/i.test(par)) {
+      return send(res, 200, JSON.stringify({ok:true, data:par}), 'application/json');
+    }
+    
+    // 2) 调用 decode 接口（代理用当前源的签名）
+    return getActiveSource().decodeUrl(par, sid).then(function(decodeData) {
+      try {
+        var dj = JSON.parse(decodeData);
+        if (dj && dj.data) {
+          var du = String(dj.data).trim();
+          if (du) return send(res, 200, JSON.stringify({ok:true, data:du}), 'application/json');
+        }
+        return send(res, 200, JSON.stringify({ok:false,error:'decode返回空'}), 'application/json');
+      } catch(e) {
+        return send(res, 200, JSON.stringify({ok:false,error:'decode解析失败:'+e.message}), 'application/json');
+      }
+    }).catch(function(e) {
+      send(res, 200, JSON.stringify({ok:false,error:e.message}), 'application/json');
+    });
+  }
+
   // 解析播放页真实地址 API
 if (pathname === '/api/play-url') {
     const playUrl = u.searchParams.get('url') || '';
@@ -2907,6 +3026,45 @@ if (pathname === '/api/play-url') {
       send(res, 200, JSON.stringify(payload), 'application/json');
     }).catch(e => {
       send(res, 200, JSON.stringify({ok:false,error:e.message}), 'application/json');
+    });
+  }
+
+  // TMDB横图背景+Logo接口（供C页面异步获取高清横图和影片Logo）
+  if (pathname === '/api/tmdb-backdrop') {
+    const title = (u.searchParams.get('title') || '').trim();
+    if (!title) return send(res, 200, JSON.stringify({ok:false, error:'missing title'}), 'application/json');
+    if (!TMDB_KEY) return send(res, 200, JSON.stringify({ok:false, error:'no tmdb key'}), 'application/json');
+    const clean = title.replace(/\(?\d{4}\)?$/, '').replace(/第\d+集$/, '').trim();
+    const searchUrl = `${TMDB_BASE}/search/multi?api_key=${TMDB_KEY}&language=zh-CN&query=${encodeURIComponent(clean)}&include_adult=false&page=1`;
+    return fetchPage(searchUrl, function(err, text) {
+      try {
+        if (err) return send(res, 200, JSON.stringify({ok:false, error:err.message}), 'application/json');
+        const data = JSON.parse(text);
+        const results = (data.results || []).filter(function(r){return r.media_type==='movie'||r.media_type==='tv'});
+        if (!results.length) return send(res, 200, JSON.stringify({ok:false, error:'no results'}), 'application/json');
+        const r = results[0];
+        const mt = r.media_type;
+        // 请求详情获取 backdrop + images.logos（一次性拿全）
+        const detailUrl = `${TMDB_BASE}/${mt}/${r.id}?api_key=${TMDB_KEY}&language=zh-CN&append_to_response=images`;
+        return fetchPage(detailUrl, function(e2, t2) {
+          try {
+            const det = JSON.parse(t2);
+            var _backdrop = det.backdrop_path ? 'https://image.tmdb.org/t/p/w780' + det.backdrop_path : '';
+            var _logos = det.images && det.images.logos ? det.images.logos : [];
+            var _zhLogo = _logos.find(function(l){return l.iso_639_1==='zh'}) || _logos.find(function(l){return l.iso_639_1==='en'});
+            var _logo = _zhLogo && _zhLogo.file_path ? 'https://image.tmdb.org/t/p/original' + _zhLogo.file_path : '';
+            if (_backdrop || _logo) {
+              send(res, 200, JSON.stringify({ok:true, backdrop:_backdrop, logo:_logo}), 'application/json');
+            } else {
+              send(res, 200, JSON.stringify({ok:false, error:'no backdrop or logo'}), 'application/json');
+            }
+          } catch(e) {
+            send(res, 200, JSON.stringify({ok:false, error:'parse error'}), 'application/json');
+          }
+        });
+      } catch(e) {
+        send(res, 200, JSON.stringify({ok:false, error:e.message}), 'application/json');
+      }
     });
   }
 
@@ -4062,7 +4220,13 @@ html += 'var _bgOpacity=parseInt(localStorage.getItem(\x27bgOpacity\x27))||30;va
   html += 'document.addEventListener("fullscreenchange",function(){var v=document.querySelector("#playerOverlay video");if(v)applyRotation(v)});';
   html += 'document.addEventListener("webkitfullscreenchange",function(){var v=document.querySelector("#playerOverlay video");if(v)applyRotation(v)});';
   html += 'el("#backBtn").onclick=function(){';
-  html += 'if(curPath==="/sdcard/Download/"||curPath==="/"){if(_isHiker){try{parent.postMessage({type:"dsjClose"},"*")}catch(e){history.back()}}else{history.back()}return}';
+  html += 'if(curPath==="/sdcard/Download/"||curPath==="/"){if(_isHiker){try{';
+  html += 'var p=parent,d=p.document;';
+  html += 'var f=d.getElementById("catFrame");if(f){f.style.display="none";f.src="about:blank"}';
+  html += '["main","car","cbar","cbarMore"].forEach(function(id){var e=d.getElementById(id);if(e)e.style.display=""});';
+  html += 'var cw=d.querySelector(".cbar-wrap");if(cw)cw.style.display="";';
+  html += 'var hd=d.querySelector(".header");if(hd)hd.style.display=""';
+  html += '}catch(e){try{parent.postMessage({type:"closeCatFrame"},"*")}catch(e2){history.back()}}}else{history.back()}return}';
   html += 'var parts=curPath.replace(/\\/$/,"").split("/");parts.pop();loadDir(parts.join("/")||"/sdcard/Download")};';
   html += 'function loadDir(p){curPath=p;el("#pathBar").textContent=p;el("#content").innerHTML="<div class=\\"tip\\\">\u52A0\u8F7D\u4E2D...</div>";';
   html += 'fetch("/files-api?path="+encodeURIComponent(p)).then(function(r){return r.json()}).then(function(j){';
