@@ -344,7 +344,7 @@ class TVBoxAPI {
     try {
       var UA = { 'User-Agent': 'okhttp/4.12.0' };
       var isVideo = function(u){ return u && /^https?:\/\//i.test(u) && /(m3u8|mp4|flv|ts|aac)/i.test(u); };
-      var DEFAULT_PARSER = 'https://jx.xmflv.com/?url=';
+      var DEFAULT_PARSER = 'https://bd.jx.cn/?url=';
       // 支持从配置文件读取用户自定义解析站
       try {
         var path = require('path');
