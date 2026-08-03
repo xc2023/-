@@ -2978,20 +2978,60 @@ if (pathname === '/api/parse-play') {
       send(res, 200, JSON.stringify({ok:false,error:e.message}), 'application/json');
     });
   }
-  // 解析站反向代理（去掉X-Frame-Options/CSP，让iframe能嵌入）
+  // 解析站反向代理（去掉X-Frame-Options/CSP，让iframe能嵌入，过滤广告）
   if (pathname === '/jx-proxy') {
     var jxUrl = u.searchParams.get('url') || '';
     if (!jxUrl || !/^https?:/.test(jxUrl)) return send(res, 400, 'bad url');
+    // 广告域名黑名单（cloudfront广告站等）
+    var _adDomains = ['d3jy4et9oiza3o.cloudfront.net', 'cloudfront.net/?dc=', 'doubleclick.net', 'googlesyndication', 'googletagservices'];
+    function _isAd(url) {
+      if (!url) return false;
+      url = url.toLowerCase();
+      for (var i = 0; i < _adDomains.length; i++) {
+        if (url.indexOf(_adDomains[i]) > -1) return true;
+      }
+      return false;
+    }
     var jxMod = jxUrl.startsWith('https') ? https : http;
     var jxReq = jxMod.get(jxUrl, { headers:{'User-Agent':'Mozilla/5.0 (Linux; Android 12; Pixel 6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36','Referer':jxUrl.split('/').slice(0,3).join('/')+'/'}, timeout:15000 }, function(jxRes) {
       if (jxRes.statusCode === 301 || jxRes.statusCode === 302 || jxRes.statusCode === 307) {
         var loc = jxRes.headers.location || '';
+        // 广告重定向直接拦截，返回空白
+        if (_isAd(loc)) { try{send(res,200,'','text/html')}catch(e){} return }
         if (loc) { try{send(res,200,JSON.stringify({redirect:loc}),'application/json')}catch(e){} return }
       }
       var body = '';
       var ct = jxRes.headers['content-type'] || 'text/html; charset=utf-8';
       jxRes.on('data', function(c) { body += c });
       jxRes.on('end', function() {
+        // 过滤HTML中的广告：移除引用广告域名的script/iframe/图片标签
+        if (ct.indexOf('html') > -1) {
+          body = body.replace(/<script[^>]*src=["'][^"']*(?:cloudfront\.net|doubleclick|googlesyndication|googletagservices)[^"']*["'][^>]*><\/script>/gi, '');
+          body = body.replace(/<iframe[^>]*src=["'][^"']*(?:cloudfront\.net|doubleclick|googlesyndication|googletagservices)[^"']*["'][^>]*>[\s\S]*?<\/iframe>/gi, '');
+          body = body.replace(/<img[^>]*src=["'][^"']*(?:cloudfront\.net|doubleclick|googlesyndication)[^"']*["'][^>]*>/gi, '');
+          // 移除cloudfront广告弹窗div
+          body = body.replace(/<div[^>]*(?:d3jy4et9oiza3o|cloudfront)[^>]*>[\s\S]*?<\/div>/gi, '');
+          // 注入CSS隐藏广告 + JS拦截广告跳转
+          var _adBlockJs = '<script>'
+            + '(function(){'
+            + 'var _adRe=/(cloudfront\\.net\\/?\\?dc=|d3jy4et9oiza3o|doubleclick|googlesyndication)/i;'
+            // 拦截 window.open
+            + 'var _wo=window.open;window.open=function(u){if(_adRe.test(u||""))return null;return _wo.apply(this,arguments)};'
+            // 拦截 location 跳转
+            + 'var _wl=window.location;'
+            + 'try{Object.defineProperty(window,"location",{set:function(v){if(_adRe.test(String(v||"")))return;_wl.href=v},get:function(){return _wl},configurable:false})}catch(e){}'
+            // 拦截 setTimeout/setInterval 中的广告跳转
+            + 'var _st=window.setTimeout;window.setTimeout=function(fn,t){if(typeof fn==="string"&&_adRe.test(fn))return 0;return _st.apply(this,arguments)};'
+            + 'var _si=window.setInterval;window.setInterval=function(fn,t){if(typeof fn==="string"&&_adRe.test(fn))return 0;return _si.apply(this,arguments)};'
+            // MutationObserver 移除动态插入的广告元素
+            + 'var _mo=new MutationObserver(function(muts){muts.forEach(function(m){m.addedNodes.forEach(function(n){if(n.nodeType===1){var s=n.src||n.data||"";if(_adRe.test(s)){n.remove&&n.remove()}}})})});'
+            + 'try{_mo.observe(document.body||document.documentElement,{childList:true,subtree:true})}catch(e){}'
+            + '})();'
+            + '</script>';
+          body = body.replace(/<\/head>/i, '<style>[class*="ad-"],[id*="ad-"],[class*="ads"],[id*="ads"],iframe[src*="cloudfront"]{display:none!important;visibility:hidden!important;width:0!important;height:0!important}</style></head>');
+          body = body.replace(/<\/body>/i, _adBlockJs + '</body>');
+          if (body.indexOf(_adBlockJs) === -1) body += _adBlockJs;
+        }
         var rh = { 'Content-Type': ct, 'Access-Control-Allow-Origin': '*' };
         if (jxRes.headers['content-length']) rh['Content-Length'] = Buffer.byteLength(body);
         res.writeHead(jxRes.statusCode || 200, rh);
