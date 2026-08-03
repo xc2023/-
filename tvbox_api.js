@@ -344,7 +344,19 @@ class TVBoxAPI {
     try {
       var UA = { 'User-Agent': 'okhttp/4.12.0' };
       var isVideo = function(u){ return u && /^https?:\/\//i.test(u) && /(m3u8|mp4|flv|ts|aac)/i.test(u); };
-      var DEFAULT_PARSER = 'https://xn--qvr2v.850088.xyz/player/?url=';
+      var DEFAULT_PARSER = 'https://jx.xmflv.com/?url=';
+      // 支持从配置文件读取用户自定义解析站
+      try {
+        var path = require('path');
+        var fs = require('fs');
+        var jxFile = path.join(__dirname, 'data', 'jx_config.json');
+        if (fs.existsSync(jxFile)) {
+          var jxCfg = JSON.parse(fs.readFileSync(jxFile, 'utf8'));
+          if (jxCfg.list && jxCfg.list.length && jxCfg.idx >= 0 && jxCfg.idx < jxCfg.list.length) {
+            DEFAULT_PARSER = jxCfg.list[jxCfg.idx].url;
+          }
+        }
+      } catch(e) {}
       var parseIframe = function(u, parser){
         var p = parser || DEFAULT_PARSER;
         var full = p.indexOf('?') > -1 || p.indexOf('=') > -1
