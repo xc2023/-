@@ -1268,7 +1268,7 @@ function _setupIframePlayer(iframeSrc){
 }
 function _getJxList(){
   try{var l=JSON.parse(localStorage.getItem('youzi_jx_list')||'null');if(l&&l.length)return l}catch(e){}
-  return [{name:'虾米',url:'https://jx.hls.one/?url='},{name:'冰豆',url:'https://bd.jx.cn/?url='}]
+  return [{name:'冰豆',url:'https://bd.jx.cn/?url='},{name:'虾米',url:'https://jx.xmflv.com/?url='}]
 }
 function _getJxIdx(){
   var l=_getJxList();var i=parseInt(localStorage.getItem('youzi_jx_idx')||'0')||0;
@@ -3074,7 +3074,7 @@ if (pathname === '/api/parse-play') {
 
     // 读取用户配置的解析站URL（与 play() 方法共用同一份配置）
     function _getJxParserUrl() {
-      var parserUrl = 'https://jx.xmflv.com/?url=';
+      var parserUrl = 'https://bd.jx.cn/?url=';
       try {
         var jxFile = path.join(__dirname, 'data', 'jx_config.json');
         if (fs.existsSync(jxFile)) {
@@ -3086,8 +3086,8 @@ if (pathname === '/api/parse-play') {
       } catch(e) {}
       return parserUrl;
     }
-    // 解析站兜底：decode 失败时依次尝试多个解析站，服务端抓取页面提取视频直链
-    // 优酷等线路需要虾米/冰豆才能解析，单靠嗅探不一定能提取到视频流
+    // 解析站兜底：decode 失败时依次尝试解析站，服务端抓取页面提取视频直链
+    // 只留冰豆和虾米：冰豆服务端能提取直链，虾米是JS动态加载需嗅探
     function _jxFallback() {
       var _sent = false;
       function _done(data, parse) {
@@ -3095,12 +3095,8 @@ if (pathname === '/api/parse-play') {
         _sent = true;
         send(res, 200, JSON.stringify({ok:true, data:data, parse:parse||false}), 'application/json');
       }
-      // 收集解析站：用户配置的 + 虾米 + 冰豆（去重）
-      var parsers = [];
-      var userParser = _getJxParserUrl();
-      if (userParser) parsers.push(userParser);
-      var extras = ['https://jx.xmflv.com/?url=', 'https://bd.jx.cn/?url='];
-      extras.forEach(function(p) { if (parsers.indexOf(p) === -1) parsers.push(p); });
+      // 只留冰豆和虾米，冰豆优先（实测冰豆服务端能提取直链，虾米需要JS动态加载）
+      var parsers = ['https://bd.jx.cn/?url=', 'https://jx.xmflv.com/?url='];
       function _buildUrl(p) {
         return (p.indexOf('=') > -1 || p.indexOf('?') > -1)
           ? p + encodeURIComponent(par)
@@ -3109,7 +3105,7 @@ if (pathname === '/api/parse-play') {
       // 依次尝试每个解析站，服务端抓取页面提取 m3u8/mp4/flv 直链
       function _tryParser(idx) {
         if (idx >= parsers.length) {
-          // 所有解析站服务端提取都失败，用第一个解析站让C页面嗅探
+          // 服务端提取都失败，用冰豆让C页面嗅探（冰豆实测能解析）
           _done(_buildUrl(parsers[0]), true);
           return;
         }
