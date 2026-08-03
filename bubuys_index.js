@@ -1055,7 +1055,9 @@ function renderTabs(){
     b.textContent=s.name+(s.episodes?' ('+s.episodes.length+')':'');
     b.onclick=function(){curSrc=i;showAll=false;renderTabs();renderEps()};
     c.appendChild(b)
-  })
+  });
+  var _sel=c.querySelector('.src-tab.on');
+  if(_sel)c.scrollLeft=_sel.offsetLeft-(c.offsetWidth-_sel.offsetWidth)/2
 }
 function renderEps(){
   var grid=document.getElementById('epGrid');grid.innerHTML='';
@@ -1064,7 +1066,7 @@ function renderEps(){
   var eps=src.episodes;
   var showEps=showAll?eps:eps.slice(0,35);
   showEps.forEach(function(ep){
-    function _nurl(u){try{u=decodeURIComponent(u)}catch(e){}return u}var d=document.createElement('div');var _eu=ep.url.charAt(0)==='/'?SITE+ep.url:ep.url;var _cu=curEpUrl&&curEpUrl.charAt(0)==='/'?SITE+curEpUrl:curEpUrl;d.className='ep-item'+(_cu&&(_nurl(_eu)===_nurl(_cu))?' on':(curEpUrl&&(_nurl(ep.url)===_nurl(curEpUrl)||_nurl(_eu).indexOf(_nurl(curEpUrl))>-1||_nurl(curEpUrl).indexOf(_nurl(ep.url))>-1)?' on':''));d.textContent=ep.title;
+    function _nurl(u){try{u=decodeURIComponent(u)}catch(e){}return u}var d=document.createElement('div');var _eu=ep.url.charAt(0)==='/'?SITE+ep.url:ep.url;var _cu=curEpUrl&&curEpUrl.charAt(0)==='/'?SITE+curEpUrl:curEpUrl;var _isCur=_cu&&_nurl(_eu)===_nurl(_cu);if(!_isCur&&curEpUrl){_isCur=_nurl(ep.url)===_nurl(curEpUrl)}d.className='ep-item'+(_isCur?' on':'');d.textContent=ep.title;
     d.onclick=function(){
       curEpUrl=ep.url;
       var u=ep.url.charAt(0)==='/'?SITE+ep.url:ep.url;
@@ -1239,7 +1241,7 @@ function _setupIframePlayer(iframeSrc){
   if(window._flvPlayer){try{window._flvPlayer.destroy()}catch(e){};window._flvPlayer=null}
   video.src='';
   var pw=document.getElementById('playerWrap');
-  pw.innerHTML='<iframe src="'+iframeSrc+'" width="100%" height="100%" allowfullscreen="true" frameborder="0" scrolling="no" style="border:0;width:100%;height:100%"></iframe>';
+  pw.innerHTML='<iframe src="/jx-proxy?url='+encodeURIComponent(iframeSrc)+'" width="100%" height="100%" allowfullscreen="true" frameborder="0" scrolling="no" style="border:0;width:100%;height:100%" referrerpolicy="no-referrer"></iframe>';
   pw.style.position='relative';
   var ctrlBar=document.createElement('div');
   ctrlBar.style.cssText='position:absolute;top:0;left:0;right:0;z-index:9999;padding:8px 12px;display:flex;align-items:center;gap:6px;background:linear-gradient(to bottom,rgba(0,0,0,.7),transparent)';
@@ -1247,14 +1249,68 @@ function _setupIframePlayer(iframeSrc){
     +'<button class="nfb" id="ifPrevEp" style="background:rgba(255,255,255,.15);border:0;color:#fff;width:34px;height:34px;border-radius:50%;cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center">⏮</button>'
     +'<button class="nfb" id="ifNextEp" style="background:rgba(255,255,255,.15);border:0;color:#fff;width:34px;height:34px;border-radius:50%;cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center">⏭</button>'
     +'<button class="nfb" id="ifShowEp" style="background:rgba(255,255,255,.15);border:0;color:#fff;width:34px;height:34px;border-radius:50%;cursor:pointer;font-size:10px;display:flex;align-items:center;justify-content:center">选集</button>'
+    +'<button class="nfb" id="ifSwitchJx" style="background:rgba(255,255,255,.15);border:0;color:#fff;width:34px;height:34px;border-radius:50%;cursor:pointer;font-size:10px;display:flex;align-items:center;justify-content:center">换源</button>'
     +'<div id="ifTitle" style="flex:1;text-align:center;font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#fff;padding:0 6px">'+document.title+'</div>';
   pw.appendChild(ctrlBar);
-  var _ifP=document.getElementById('ifPrevEp'),_ifN=document.getElementById('ifNextEp'),_ifS=document.getElementById('ifShowEp');
+  var _ifP=document.getElementById('ifPrevEp'),_ifN=document.getElementById('ifNextEp'),_ifS=document.getElementById('ifShowEp'),_ifJ=document.getElementById('ifSwitchJx');
   if(_ifP)_ifP.onclick=function(e){e.stopPropagation();switchEp(-1)};
   if(_ifN)_ifN.onclick=function(e){e.stopPropagation();switchEp(1)};
   if(_ifS)_ifS.onclick=function(e){e.stopPropagation();var bar=document.getElementById('epBar'),srcBar=document.getElementById('srcBar');if(bar){var vis=bar.style.display!=='none';bar.style.display=vis?'none':'';if(srcBar)srcBar.style.display=vis?'none':'';if(!vis){bar.scrollIntoView({behavior:'smooth'})}}};
+  if(_ifJ){
+    _ifJ.onclick=function(e){e.stopPropagation();_showJxPanel()};
+    var _jxTimer=null;
+    _ifJ.addEventListener('touchstart',function(e){e.stopPropagation();_jxTimer=setTimeout(function(){var l=_getJxList();if(!l.length)return;var i=_getJxIdx();i=(i+1)%l.length;localStorage.setItem('youzi_jx_idx',i);_syncJxToServer();initPlayer(PLAY_URL)},500)},{passive:true});
+    _ifJ.addEventListener('touchend',function(){clearTimeout(_jxTimer)});
+    _ifJ.addEventListener('touchmove',function(){clearTimeout(_jxTimer)});
+  }
   if(pSources&&pSources.length)updatePrevNext();
   document.getElementById('sourceInfo').textContent='正在解析...';
+}
+function _getJxList(){
+  try{var l=JSON.parse(localStorage.getItem('youzi_jx_list')||'null');if(l&&l.length)return l}catch(e){}
+  return [{name:'虾米',url:'https://jx.hls.one/?url='},{name:'冰豆',url:'https://bd.jx.cn/?url='}]
+}
+function _getJxIdx(){
+  var l=_getJxList();var i=parseInt(localStorage.getItem('youzi_jx_idx')||'0')||0;
+  if(i<0||i>=l.length)i=0;return i
+}
+// 同步解析站配置到服务端 data/jx_config.json（供C页面 /api/decode 和 TVBox play() 使用）
+function _syncJxToServer(){
+  try{
+    var list=_getJxList();var idx=_getJxIdx();
+    fetch('/api/jx-config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({list:list,idx:idx})}).catch(function(){});
+  }catch(e){}
+}
+function _showJxPanel(){
+  var ex=document.getElementById('jxPanel');if(ex){ex.remove();return}
+  var list=_getJxList();var cur=_getJxIdx();
+  var p=document.createElement('div');p.id='jxPanel';p.style.cssText='position:absolute;top:44px;left:8px;right:8px;z-index:10000;background:rgba(20,20,30,.98);border-radius:12px;padding:12px;max-height:70vh;overflow-y:auto;box-shadow:0 4px 20px rgba(0,0,0,.6)';
+  var h='<div style="font-size:14px;font-weight:700;color:#fff;margin-bottom:10px">解析站管理</div>';
+  list.forEach(function(item,i){
+    h+='<div style="display:flex;align-items:center;gap:8px;padding:8px;border-radius:8px;margin-bottom:6px;background:'+(i===cur?'rgba(79,195,247,.2)':'rgba(255,255,255,.06)')+';border:1px solid '+(i===cur?'rgba(79,195,247,.5)':'rgba(255,255,255,.1)')+'">';
+    h+='<div style="flex:1;min-width:0"><div style="font-size:13px;color:'+(i===cur?'#4fc3f7':'#fff')+';font-weight:'+(i===cur?'700':'400')+'">'+item.name+(i===cur?' ✓':'')+'</div><div style="font-size:10px;color:rgba(255,255,255,.4);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+item.url+'</div></div>';
+    h+='<button data-act="use" data-i="'+i+'" style="background:rgba(79,195,247,.25);border:1px solid rgba(79,195,247,.5);color:#4fc3f7;padding:4px 10px;border-radius:6px;font-size:11px;cursor:pointer;flex-shrink:0">使用</button>';
+    h+='<button data-act="del" data-i="'+i+'" style="background:rgba(255,99,99,.2);border:1px solid rgba(255,99,99,.4);color:#ff6b6b;padding:4px 8px;border-radius:6px;font-size:11px;cursor:pointer;flex-shrink:0">删</button>';
+    h+='</div>'
+  });
+  h+='<div style="display:flex;gap:8px;margin-top:8px"><input id="jxAddName" placeholder="名称" style="flex:0 0 80px;padding:6px 8px;border-radius:6px;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.08);color:#fff;font-size:12px"><input id="jxAddUrl" placeholder="解析接口地址(含?url=)" style="flex:1;min-width:0;padding:6px 8px;border-radius:6px;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.08);color:#fff;font-size:12px"><button id="jxAddBtn" style="background:rgba(79,195,247,.25);border:1px solid rgba(79,195,247,.5);color:#4fc3f7;padding:6px 12px;border-radius:6px;font-size:12px;cursor:pointer;flex-shrink:0">添加</button></div>';
+  p.innerHTML=h;
+  document.body.appendChild(p);
+  p.addEventListener('click',function(e){
+    var btn=e.target.closest('button');if(!btn)return;
+    var act=btn.dataset.act,i=parseInt(btn.dataset.i);
+    if(act==='use'){localStorage.setItem('youzi_jx_idx',i);_syncJxToServer();p.remove();initPlayer(PLAY_URL)}
+    else if(act==='del'){var l=_getJxList();l.splice(i,1);localStorage.setItem('youzi_jx_list',JSON.stringify(l));if(_getJxIdx()>=l.length)localStorage.setItem('youzi_jx_idx','0');_syncJxToServer();p.remove();_showJxPanel()}
+  });
+  var addBtn=p.querySelector('#jxAddBtn');
+  if(addBtn)addBtn.onclick=function(){
+    var n=p.querySelector('#jxAddName').value.trim(),u=p.querySelector('#jxAddUrl').value.trim();
+    if(!n||!u){return}
+    if(u.indexOf('http')!==0)u='https://'+u;
+    var l=_getJxList();l.push({name:n,url:u});localStorage.setItem('youzi_jx_list',JSON.stringify(l));
+    _syncJxToServer();
+    p.remove();_showJxPanel()
+  };
 }
 
 function initPlayer(url){
@@ -1280,7 +1336,10 @@ function _doPlay(url){
   // 非视频直链（官网播放页 v.qq.com 等 / 加密令牌 JD-xxx / co_xxx）→ iframe 专用解析服务
   // 注意：很多合法 m3u8 URL 没有 .m3u8 后缀（如 /getM3u8?name=xxx），需宽松匹配
   if(url.indexOf('http')!==0 || !/(m3u8|mp4|flv|ts|aac)/i.test(url)){
-    _setupIframePlayer('https://xn--qvr2v.850088.xyz/player/?url='+encodeURIComponent(url)+'&next=&title='+encodeURIComponent(document.title.split('-')[0]));
+    var _jxList=_getJxList();
+    var _jxIdx=_getJxIdx();
+    if(!_jxList.length){showError('无可用解析站，请长按换源按钮添加');return}
+    _setupIframePlayer(_jxList[_jxIdx].url+encodeURIComponent(url));
     return;
   }
   // ixigua CDN 需要通过服务端代理（Referer 403）
@@ -1522,7 +1581,7 @@ document.getElementById('playerWrap').onmousemove=showControls;
 
 // 加载集数列表
 var pSources=null,pCurSrc=0;
-function _matchSrcIdx(){if(!pSources||!pSources.length)return 0;var _pu=_normUrl(PLAY_URL);for(var i=0;i<pSources.length;i++){var src=pSources[i];if(!src||!src.episodes)continue;for(var j=0;j<src.episodes.length;j++){var _eu=src.episodes[j].url.charAt(0)==='/'?SITE+src.episodes[j].url:src.episodes[j].url;if(_normUrl(_eu)===_pu||_pu===src.episodes[j].url||_pu.indexOf(src.episodes[j].url)>-1||src.episodes[j].url.indexOf(PLAY_URL)>-1)return i}}return 0}
+function _matchSrcIdx(){if(!pSources||!pSources.length)return 0;var _pu=_normUrl(PLAY_URL);for(var i=0;i<pSources.length;i++){var src=pSources[i];if(!src||!src.episodes)continue;for(var j=0;j<src.episodes.length;j++){var _eu=src.episodes[j].url.charAt(0)==='/'?SITE+src.episodes[j].url:src.episodes[j].url;if(_normUrl(_eu)===_pu||_pu===src.episodes[j].url)return i}}return 0}
 function loadEpisodes(){
   if(!VOD_URL){document.getElementById('epBar').innerHTML='<div style="color:#ff6b6b;padding:10px">无VOD_URL</div>';return}
   // 优先使用传入的集数列表（本地JSON数据源）
@@ -1551,6 +1610,8 @@ function renderSrcTabs(){
     b.onclick=function(){pCurSrc=i;renderSrcTabs();renderEpList();updatePrevNext()};
     bar.appendChild(b)
   });
+  var _sel=bar.querySelector('.src-btn.on');
+  if(_sel)bar.scrollLeft=_sel.offsetLeft-(bar.offsetWidth-_sel.offsetWidth)/2
 }
 function updatePrevNext(){var idx=getCurrentEpIdx();if(idx<0){try{idx=parseInt(localStorage.getItem('youzi_ep_idx_'+VOD_URL)||'-1')}catch(e){}}var total=((pSources[pCurSrc||0]||{}).episodes||[]).length;var disPrev=idx<=0,disNext=idx<0||idx>=total-1;if(_prevBtn){_prevBtn.disabled=disPrev;_prevBtn.style.opacity=disPrev?'.3':'1'}if(_nextBtn){_nextBtn.disabled=disNext;_nextBtn.style.opacity=disNext?'.3':'1'}if(_fsPrev){_fsPrev.disabled=disPrev;_fsPrev.style.opacity=disPrev?'.3':'1'}if(_fsNext){_fsNext.disabled=disNext;_fsNext.style.opacity=disNext?'.3':'1'}var _ip=document.getElementById('ifPrevEp'),_in=document.getElementById('ifNextEp');if(_ip){_ip.disabled=disPrev;_ip.style.opacity=disPrev?'.3':'1'}if(_in){_in.disabled=disNext;_in.style.opacity=disNext?'.3':'1'}}
 function renderEpList(){
@@ -1561,7 +1622,7 @@ function renderEpList(){
   src.episodes.forEach(function(ep,idx){
     var b=document.createElement('div');b.className='ep-btn';
     b.textContent=ep.title;
-    var _pu=_normUrl(PLAY_URL);var _eu2=ep.url.charAt(0)==='/'?SITE+ep.url:ep.url;if(_pu&&(_normUrl(_eu2)===_pu||_pu===ep.url||_pu.indexOf(ep.url)>-1||ep.url.indexOf(PLAY_URL)>-1||_normUrl(ep.url).indexOf(_pu)>-1))b.classList.add('on');
+    var _pu=_normUrl(PLAY_URL);var _eu2=ep.url.charAt(0)==='/'?SITE+ep.url:ep.url;if(_pu&&(_normUrl(_eu2)===_pu||_pu===ep.url))b.classList.add('on');
     b.onclick=function(){
       var u=ep.url.charAt(0)==='/'?SITE+ep.url:ep.url;
       try{sessionStorage.setItem('youzi_ep_'+VOD_URL,JSON.stringify({sources:pSources}))}catch(e){}
@@ -1577,7 +1638,7 @@ function renderEpList(){
     if(_savedIdx>=0&&_savedIdx<bar.children.length){bar.children[_savedIdx].classList.add('on');cur=bar.children[_savedIdx]}
     else{var first=bar.querySelector('.ep-btn');if(first){first.classList.add('on');cur=first}}
   }
-  if(cur)cur.scrollIntoView({behavior:'smooth',inline:'center'});
+  if(cur)bar.scrollLeft=cur.offsetLeft-(bar.offsetWidth-cur.offsetWidth)/2;
 }
 
 function resolveAndPlay(url){
@@ -1599,7 +1660,7 @@ function resolveAndPlay(url){
 // ===== 返回按钮 =====
 document.getElementById('backBtn').onclick=function(){try{parent.postMessage({type:'dsjShowChrome'},'*')}catch(e){}history.back()};
 // ===== 上集/下集/选集/旋转 =====
-function _normUrl(u){try{u=decodeURIComponent(u)}catch(e){}var d=document.createElement('div');d.innerHTML=u;var r=d.textContent;return r||u}function _fixEpUrl(u){if(!u)return u;if(u.charAt(0)==='/')return SITE+u;return u}function getCurrentEpIdx(){var src=pSources&&pSources[pCurSrc||0];if(!src||!src.episodes)return-1;var _pu=_normUrl(PLAY_URL);for(var i=0;i<src.episodes.length;i++){var eu=_fixEpUrl(src.episodes[i].url);if(_normUrl(eu)===_pu||_pu===src.episodes[i].url||_pu.indexOf(src.episodes[i].url)>-1||src.episodes[i].url.indexOf(PLAY_URL)>-1)return i}return-1}
+function _normUrl(u){try{u=decodeURIComponent(u)}catch(e){}var d=document.createElement('div');d.innerHTML=u;var r=d.textContent;return r||u}function _fixEpUrl(u){if(!u)return u;if(u.charAt(0)==='/')return SITE+u;return u}function getCurrentEpIdx(){var src=pSources&&pSources[pCurSrc||0];if(!src||!src.episodes)return-1;var _pu=_normUrl(PLAY_URL);for(var i=0;i<src.episodes.length;i++){var eu=_fixEpUrl(src.episodes[i].url);if(_normUrl(eu)===_pu||_pu===src.episodes[i].url)return i}return-1}
 function switchEp(dir){_clearAutoNext();if(!pSources||!pSources.length)return;var src=pSources[pCurSrc||0];if(!src||!src.episodes)return;var idx=getCurrentEpIdx();var next=idx+dir;if(next<0||next>=src.episodes.length)return;var ep=src.episodes[next];var u=_fixEpUrl(ep.url);try{sessionStorage.setItem('youzi_ep_'+VOD_URL,JSON.stringify({sources:pSources}))}catch(e){}
 location.replace('/player?url='+encodeURIComponent(u)+'&title='+encodeURIComponent(ep.title)+'&vod='+encodeURIComponent(VOD_URL))}
 var _prevBtn=document.getElementById('prevEp'),_nextBtn=document.getElementById('nextEp'),_showEpBtn=document.getElementById('showEpBtn'),_rotateBtn=document.getElementById('rotateBtn');
@@ -1658,6 +1719,8 @@ document.addEventListener('fullscreenchange',function(){try{localStorage.setItem
 // ===== info-bar 动态显隐 =====
 video.addEventListener('waiting',function(){document.getElementById('infoBar').style.display=''});
 video.addEventListener('canplay',function(){setTimeout(function(){if(!video.paused)document.getElementById('infoBar').style.display='none'},500)});
+// ===== 页面加载时同步解析站配置到服务端 =====
+try{_syncJxToServer()}catch(e){}
 if(PLAY_URL){
   _startPlay(PLAY_URL);
 }else if(VOD_URL){
@@ -2915,6 +2978,30 @@ if (pathname === '/api/parse-play') {
       send(res, 200, JSON.stringify({ok:false,error:e.message}), 'application/json');
     });
   }
+  // 解析站反向代理（去掉X-Frame-Options/CSP，让iframe能嵌入）
+  if (pathname === '/jx-proxy') {
+    var jxUrl = u.searchParams.get('url') || '';
+    if (!jxUrl || !/^https?:/.test(jxUrl)) return send(res, 400, 'bad url');
+    var jxMod = jxUrl.startsWith('https') ? https : http;
+    var jxReq = jxMod.get(jxUrl, { headers:{'User-Agent':'Mozilla/5.0 (Linux; Android 12; Pixel 6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36','Referer':jxUrl.split('/').slice(0,3).join('/')+'/'}, timeout:15000 }, function(jxRes) {
+      if (jxRes.statusCode === 301 || jxRes.statusCode === 302 || jxRes.statusCode === 307) {
+        var loc = jxRes.headers.location || '';
+        if (loc) { try{send(res,200,JSON.stringify({redirect:loc}),'application/json')}catch(e){} return }
+      }
+      var body = '';
+      var ct = jxRes.headers['content-type'] || 'text/html; charset=utf-8';
+      jxRes.on('data', function(c) { body += c });
+      jxRes.on('end', function() {
+        var rh = { 'Content-Type': ct, 'Access-Control-Allow-Origin': '*' };
+        if (jxRes.headers['content-length']) rh['Content-Length'] = Buffer.byteLength(body);
+        res.writeHead(jxRes.statusCode || 200, rh);
+        res.end(body);
+      });
+    });
+    jxReq.on('error', function() { try{send(res,502,'proxy error')}catch(e){} });
+    jxReq.on('timeout', function() { jxReq.destroy(); try{send(res,504,'timeout')}catch(e){} });
+    return;
+  }
   // 视频流代理（解决 ixigua Referer 403）
   if (pathname === '/play-stream') {
     const videoUrl = u.searchParams.get('url') || '';
@@ -2984,12 +3071,96 @@ if (pathname === '/api/parse-play') {
     const par = u.searchParams.get('par') || '';
     const sid = u.searchParams.get('sid') || '';
     if (!par) return send(res, 200, JSON.stringify({ok:false,error:'missing par'}), 'application/json');
-    
+
+    // 读取用户配置的解析站URL（与 play() 方法共用同一份配置）
+    function _getJxParserUrl() {
+      var parserUrl = 'https://jx.xmflv.com/?url=';
+      try {
+        var jxFile = path.join(__dirname, 'data', 'jx_config.json');
+        if (fs.existsSync(jxFile)) {
+          var jxCfg = JSON.parse(fs.readFileSync(jxFile, 'utf8'));
+          if (jxCfg.list && jxCfg.list.length && jxCfg.idx >= 0 && jxCfg.idx < jxCfg.list.length) {
+            parserUrl = jxCfg.list[jxCfg.idx].url;
+          }
+        }
+      } catch(e) {}
+      return parserUrl;
+    }
+    // 解析站兜底：decode 失败时依次尝试多个解析站，服务端抓取页面提取视频直链
+    // 优酷等线路需要虾米/冰豆才能解析，单靠嗅探不一定能提取到视频流
+    function _jxFallback() {
+      var _sent = false;
+      function _done(data, parse) {
+        if (_sent) return;
+        _sent = true;
+        send(res, 200, JSON.stringify({ok:true, data:data, parse:parse||false}), 'application/json');
+      }
+      // 收集解析站：用户配置的 + 虾米 + 冰豆（去重）
+      var parsers = [];
+      var userParser = _getJxParserUrl();
+      if (userParser) parsers.push(userParser);
+      var extras = ['https://jx.xmflv.com/?url=', 'https://bd.jx.cn/?url='];
+      extras.forEach(function(p) { if (parsers.indexOf(p) === -1) parsers.push(p); });
+      function _buildUrl(p) {
+        return (p.indexOf('=') > -1 || p.indexOf('?') > -1)
+          ? p + encodeURIComponent(par)
+          : p + '?url=' + encodeURIComponent(par);
+      }
+      // 依次尝试每个解析站，服务端抓取页面提取 m3u8/mp4/flv 直链
+      function _tryParser(idx) {
+        if (idx >= parsers.length) {
+          // 所有解析站服务端提取都失败，用第一个解析站让C页面嗅探
+          _done(_buildUrl(parsers[0]), true);
+          return;
+        }
+        var full = _buildUrl(parsers[idx]);
+        var jxMod = full.startsWith('https') ? https : http;
+        var jxReq = jxMod.get(full, {
+          headers: {'User-Agent':'Mozilla/5.0 (Linux; Android 12; Pixel 6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36','Referer':parsers[idx]},
+          timeout: 8000
+        }, function(jxRes) {
+          // 跟随重定向
+          if (jxRes.statusCode >= 300 && jxRes.statusCode < 400 && jxRes.headers.location) {
+            var loc = jxRes.headers.location;
+            if (!/^https?:/.test(loc)) {
+              try { var pu = new URL(parsers[idx]); loc = pu.protocol + '//' + pu.host + (loc.charAt(0)==='/' ? loc : '/'+loc); } catch(e) {}
+            }
+            var locMod = loc.startsWith('https') ? https : http;
+            var locReq = locMod.get(loc, {headers:{'User-Agent':'Mozilla/5.0 (Linux; Android 12; Pixel 6) AppleWebKit/537.36 Chrome/120.0.0.0 Mobile Safari/537.36'},timeout:8000}, function(locRes) {
+              var body2 = '';
+              locRes.on('data', function(c) { body2 += c; });
+              locRes.on('end', function() {
+                var m2 = body2.match(/(https?:\/\/[^\s"'<>()\\]+?\.(?:m3u8|mp4|flv)(?:\?[^\s"'<>()\\]*)?)/i);
+                if (m2) { _done(m2[1], false); return; }
+                _tryParser(idx + 1);
+              });
+            });
+            locReq.on('error', function() { _tryParser(idx + 1); });
+            locReq.on('timeout', function() { locReq.destroy(); _tryParser(idx + 1); });
+            return;
+          }
+          var body = '';
+          jxRes.on('data', function(c) { body += c; });
+          jxRes.on('end', function() {
+            // 从HTML/JS中提取视频直链
+            var m = body.match(/(https?:\/\/[^\s"'<>()\\]+?\.(?:m3u8|mp4|flv)(?:\?[^\s"'<>()\\]*)?)/i);
+            if (m) { _done(m[1], false); return; }
+            // 尝试JSON格式（有些解析站返回JSON）
+            try { var j = JSON.parse(body); if (j.url && /^https?:\/\//.test(j.url)) { _done(j.url, false); return; } } catch(e) {}
+            _tryParser(idx + 1);
+          });
+        });
+        jxReq.on('error', function() { _tryParser(idx + 1); });
+        jxReq.on('timeout', function() { jxReq.destroy(); _tryParser(idx + 1); });
+      }
+      _tryParser(0);
+    }
+
     // 1) 直链视频直接返回
     if (/^https?:\/\/.+\.(m3u8|mp4|flv|ts|aac)(\?|$)/i.test(par)) {
       return send(res, 200, JSON.stringify({ok:true, data:par}), 'application/json');
     }
-    
+
     // 2) 调用 decode 接口（代理用当前源的签名）
     return getActiveSource().decodeUrl(par, sid).then(function(decodeData) {
       try {
@@ -2998,13 +3169,47 @@ if (pathname === '/api/parse-play') {
           var du = String(dj.data).trim();
           if (du) return send(res, 200, JSON.stringify({ok:true, data:du}), 'application/json');
         }
-        return send(res, 200, JSON.stringify({ok:false,error:'decode返回空'}), 'application/json');
+        // 3) decode 返回空，用解析站兜底
+        return _jxFallback();
       } catch(e) {
-        return send(res, 200, JSON.stringify({ok:false,error:'decode解析失败:'+e.message}), 'application/json');
+        // 3) decode 解析失败，用解析站兜底
+        return _jxFallback();
       }
     }).catch(function(e) {
-      send(res, 200, JSON.stringify({ok:false,error:e.message}), 'application/json');
+      // 3) decode 请求失败，用解析站兜底
+      return _jxFallback();
     });
+  }
+
+  // 解析站配置 API（保存/读取，存到data/jx_config.json）
+  if (pathname === '/api/jx-config') {
+    var jxFile = path.join(__dirname, 'data', 'jx_config.json');
+    if (req.method === 'POST') {
+      var jxBody = '';
+      req.on('data', function(c) { jxBody += c });
+      req.on('end', function() {
+        try {
+          var jxObj = JSON.parse(jxBody);
+          if (!fs.existsSync(path.join(__dirname, 'data'))) fs.mkdirSync(path.join(__dirname, 'data'), {recursive:true});
+          fs.writeFileSync(jxFile, JSON.stringify({list:jxObj.list||[], idx:jxObj.idx||0}, null, 2), 'utf8');
+          send(res, 200, JSON.stringify({ok:true}), 'application/json');
+        } catch(e) {
+          send(res, 200, JSON.stringify({ok:false, error:e.message}), 'application/json');
+        }
+      });
+      return;
+    }
+    try {
+      if (fs.existsSync(jxFile)) {
+        var jxCfg = JSON.parse(fs.readFileSync(jxFile, 'utf8'));
+        send(res, 200, JSON.stringify({ok:true, list:jxCfg.list||[], idx:jxCfg.idx||0}), 'application/json');
+      } else {
+        send(res, 200, JSON.stringify({ok:true, list:[], idx:0}), 'application/json');
+      }
+    } catch(e) {
+      send(res, 200, JSON.stringify({ok:false, error:e.message}), 'application/json');
+    }
+    return;
   }
 
   // 解析播放页真实地址 API
@@ -3345,6 +3550,13 @@ io.observe(el('#tip'));loadMore();
               }
             } catch(e2) {}
           }
+          if (!s.isDirectory()) {
+            var _ext = path.extname(name).toLowerCase();
+            if (/^\.(mp4|mkv|avi|mov|flv|ts|webm|m4v|rmvb|rm|3gp|mpeg|mpg|vob)$/.test(_ext) && s.size < 2*1024*1024) continue;
+            if (/^\.(mp3|wav|flac|aac|ogg|m4a|wma|ape|opus)$/.test(_ext) && s.size < 1*1024*1024) continue;
+            if (/^\.(jpg|jpeg|png|gif|webp|bmp)$/.test(_ext) && s.size < 100*1024) continue;
+            if (/^\.(txt|epub|mobi|pdf|doc|docx|azw3|fb2|rtf)$/.test(_ext) && s.size < 1*1024*1024) continue;
+          }
           items.push({
             name: name,
             path: fp,
@@ -3364,6 +3576,47 @@ io.observe(el('#tip'));loadMore();
     } catch(e) {
       send(res, 200, JSON.stringify({ok:false,error:e.message}), 'application/json');
     }
+    return;
+  }
+
+  if (pathname === '/files-search') {
+    const dir = u.searchParams.get('path') || '/sdcard/Download/';
+    const cat = u.searchParams.get('cat') || '';
+    var extMap = { video: ['.mp4','.mkv','.avi','.mov','.flv','.ts','.webm','.m4v','.rmvb','.rm','.3gp','.mpeg','.mpg','.vob'], music: ['.mp3','.wav','.flac','.aac','.ogg','.m4a','.wma','.ape','.cue','.opus'], novel: ['.txt','.epub','.mobi','.pdf','.doc','.docx','.azw3','.fb2','.rtf'], image: ['.jpg','.jpeg','.png','.gif','.webp','.bmp'] };
+    var exts = extMap[cat] || [];
+    if (!exts.length) return send(res, 200, JSON.stringify({ok:false,error:'unknown category'}), 'application/json');
+    if (!fs.existsSync(dir)) return send(res, 200, JSON.stringify({ok:false,error:'dir not found'}), 'application/json');
+    var results = [];
+    var visited = {};
+    function walk(d, depth) {
+      if (depth > 5 || visited[d]) return;
+      visited[d] = true;
+      try {
+        var entries = fs.readdirSync(d);
+        for (var i = 0; i < entries.length; i++) {
+          var name = entries[i];
+          if (name.startsWith('.')) continue;
+          var fp = path.join(d, name);
+          try {
+            var s = fs.statSync(fp);
+            if (s.isDirectory()) { walk(fp, depth + 1); continue; }
+            var ext = path.extname(name).toLowerCase();
+            if (exts.indexOf(ext) > -1) {
+              if (cat === 'video' && s.size < 2*1024*1024) continue;
+              if (cat === 'music' && s.size < 1*1024*1024) continue;
+              if (cat === 'image' && s.size < 100*1024) continue;
+              if (cat === 'novel' && s.size < 1*1024*1024) continue;
+              var thumb = '';
+              try { var sib = fs.readdirSync(d); for (var ci = 0; ci < sib.length; ci++) { var sn = sib[ci].toLowerCase(); if (sn === 'cover.jpg' || sn === 'cover.png' || sn === 'folder.jpg' || sn === 'folder.png' || sn === 'poster.jpg' || sn === 'poster.png') { thumb = path.join(d, sib[ci]); break; } if (sib[ci] !== name) { var sExt = path.extname(sib[ci]).toLowerCase(); if (sExt === '.jpg' || sExt === '.png') { var baseName = path.basename(name, ext).toLowerCase(); var sibBase = path.basename(sib[ci], sExt).toLowerCase(); if (sibBase === baseName) { thumb = path.join(d, sib[ci]); break; } } } } } catch(e3) {}
+              results.push({ name: name, path: fp, isDir: false, size: s.size, mtime: s.mtimeMs, thumb: thumb });
+            }
+          } catch(e2) {}
+        }
+      } catch(e1) {}
+    }
+    walk(dir, 0);
+    results.sort(function(a, b) { return b.mtime - a.mtime; });
+    send(res, 200, JSON.stringify({ok:true, items:results}), 'application/json');
     return;
   }
 
@@ -4130,8 +4383,10 @@ function fileManagerHtml(startPath) {
   html += '@media(orientation:landscape){.fm-vinyl.has-lyrics{flex-direction:row;justify-content:center;align-items:center;gap:24px;padding:40px 24px 80px 60px}.fm-vinyl.has-lyrics .fm-vinyl-stage{margin-bottom:0}.fm-vinyl.has-lyrics .fm-vinyl-info{margin-top:39px}.fm-vinyl.has-lyrics .fm-vinyl-player{width:220px;height:220px}.fm-vinyl.has-lyrics .fm-vinyl-tonearm{width:115px;height:115px;top:-12px;right:-12px}.fm-vinyl.has-lyrics .fm-lyrics{flex:1;max-width:50%;max-height:75vh;align-self:stretch;justify-content:flex-start;margin:0;position:relative;min-height:0}}';
   html += '@media(orientation:landscape) and (max-height:400px){.fm-vinyl.has-lyrics .fm-vinyl-player{width:200px;height:200px}.fm-vinyl.has-lyrics .fm-vinyl-tonearm{width:85px;height:85px;top:-8px;right:-8px}}';
   html += '@media(max-width:440px){.fm-vinyl-player{width:250px;height:250px}.fm-vinyl-tonearm{width:130px;height:130px;top:-15px;right:-15px}.fm-vinyl-playbtn{width:54px;height:54px}.fm-vinyl-playbtn svg{width:26px;height:26px}}';
+  html += '.filter-bar{display:flex;gap:8px;padding:0 12px 8px;overflow-x:auto;-webkit-overflow-scrolling:touch}.filter-bar::-webkit-scrollbar{display:none}.filter-tab{flex-shrink:0;padding:6px 16px;border-radius:16px;font-size:13px;font-weight:600;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);cursor:pointer;transition:all .2s;white-space:nowrap;color:rgba(255,255,255,.7)}.filter-tab.on{background:rgba(79,195,247,.25);border-color:rgba(79,195,247,.5);color:#4fc3f7}.card-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:8px 12px}.vcard{background:rgba(255,255,255,.06);border-radius:14px;overflow:hidden;border:1px solid rgba(255,255,255,.12);cursor:pointer;transition:transform .15s}.vcard:active{transform:scale(.97)}.vcard-poster{position:relative;overflow:hidden;background:linear-gradient(135deg,#1a1a2e,#16213e)}.vcard-poster img{width:100%;aspect-ratio:3/4;object-fit:cover;display:block;min-height:120px}.vcard-poster::after{content:"";position:absolute;bottom:0;left:0;right:0;height:40%;background:linear-gradient(transparent,rgba(0,0,0,.6));pointer-events:none}.vcard-name{padding:6px 8px;font-size:12px;color:rgba(255,255,255,.85);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:center}';
   html += '</style></head><body>';
   html += '<div class="topbar"><button class="nbtn" id="backBtn">\u2190</button><div class="path-bar" id="pathBar">' + safePath + '</div></div>';
+  html += '<div class="filter-bar" id="filterBar"><div class="filter-tab on" data-filter="all" onclick="setFilter(\'all\')">全部</div><div class="filter-tab" data-filter="video" onclick="setFilter(\'video\')">影片</div><div class="filter-tab" data-filter="music" onclick="setFilter(\'music\')">音乐</div><div class="filter-tab" data-filter="novel" onclick="setFilter(\'novel\')">小说</div><div class="filter-tab" data-filter="image" onclick="setFilter(\'image\')">图片</div></div>';
   html += '<div id="content"><div class="tip">加载中...</div></div>';
   html += '<div class="backdrop" id="backdrop"></div><div class="info-panel" id="infoPanel"></div>';
   html += '<div class="player-overlay" id="playerOverlay"><div class="player-topbar"><button onclick="closePlayer()">\u2190</button><div class="ptitle" id="playerTitle"></div><button onclick="toggleSettings()" style="background:rgba(255,255,255,.15);border:0;color:#fff;width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:16px">\u2699</button><button onclick="toggleFs()" style="background:rgba(255,255,255,.15);border:0;color:#fff;width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:14px;margin-left:4px">\u26F6</button><button onclick="toggleRotate()" style="background:rgba(255,255,255,.15);border:0;color:#fff;width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:14px;margin-left:4px">\u21BB</button></div><div class="reader-settings" id="readerSettings"><div class="rs-title">字体大小</div><div class="rs-row"><button class="rs-btn" onclick="adjustFontSize(-2)">A- \u7F29\u5C0F</button><span id="fontSizeVal" style="color:#fff;font-size:13px;width:40px;text-align:center">16</span><button class="rs-btn" onclick="adjustFontSize(2)">A+ \u653E\u5927</button></div><div class="rs-title">主题</div><div class="rs-row"><button class="rs-btn" id="themeDark" onclick="setTheme(0)">\u9ED1\u8272</button><button class="rs-btn" id="themeLight" onclick="setTheme(1)">\u4EAE\u8272</button><button class="rs-btn" id="themeNight" onclick="setTheme(2)">\u591C\u95F4</button></div><div class="rs-title">进度跳转</div><input type="number" id="progressInput" min="0" max="100" placeholder="0-100%" onchange="jumpToProgress(this.value)"><div class="rs-title">网络文件</div><input type="text" id="webFileUrl" placeholder="输入文本/JSON/MD等URL" style="width:100%;padding:7px 8px;border-radius:8px;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.08);color:#fff;font-size:13px;margin-bottom:8px"><button class="rs-btn" onclick="loadWebFile()" style="width:100%;margin-bottom:8px">\u52A0\u8F7D\u7F51\u7EDC\u6587\u672C</button><div class="rs-title">搜索</div><div style="display:flex;gap:6px"><input type="text" id="searchInput" placeholder="输入关键词" style="flex:1;padding:8px 12px 8px 32px;border-radius:8px;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.08);color:#fff;font-size:13px;outline:none;background-image:url(data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2216%22%20height%3D%2216%22%20fill%3D%22rgba(255%2C255%255%2C0.4)%22%20viewBox%3D%220%200%2016%2016%22%3E%3Cpath%20d%3D%22M11.742%2010.344a6.5%206.5%200%201%200-1.397%201.398h-.001l3.85%203.85a1%201%200%200%200%201.415-1.414l-3.85-3.85zm-5.242.156a5%205%200%201%201%200-10%205%205%200%200%201%200%2010z%22%2F%3E%3C%2Fsvg%3E);background-repeat:no-repeat;background-position:10px center" oninput="searchInContent(this.value)" onkeydown="if(event.key===\x27Enter\x27)searchInContent(this.value)"></div><div class="rs-title">背景图片</div><div class="rs-row"><button class="rs-btn" onclick="setBgImage(\x27\x27)">默认</button><button class="rs-btn" onclick="setBgImage(\x27local\x27)">本地图片</button><button class="rs-btn" onclick="setBgImage(\x27url\x27)">网络图片</button></div><div class="rs-title">背景透明度</div><div class="rs-row" style="align-items:center;gap:8px"><input type="range" id="bgOpacity" min="0" max="100" value="30" style="flex:1;accent-color:#4fc3f7" oninput="setBgOpacity(this.value)"><span id="bgOpacityVal" style="color:#fff;font-size:12px;min-width:35px;text-align:right">30%</span></div><div class="rs-title">明暗度</div><div class="rs-row" style="align-items:center;gap:8px"><input type="range" id="bgBrightness" min="20" max="150" value="100" style="flex:1;accent-color:#4fc3f7" oninput="setBrightness(this.value)"><span id="brightnessVal" style="color:#fff;font-size:12px;min-width:35px;text-align:right">100%</span></div></div><div class="player-wrap" id="playerWrap"></div></div>';
@@ -4153,12 +4408,22 @@ function fileManagerHtml(startPath) {
   html += 'function isImage(n){return /\\.(jpg|jpeg|png|gif|webp|bmp)$/i.test(n)}';
   html += 'function isPdf(n){return /\\.pdf$/i.test(n)}';
   html += 'function isText(n){return /\\.(txt|md|json|xml|csv|log|srt|ass|vtt|html|htm)$/i.test(n)};function isEpub(n){return /\\.epub$/i.test(n)}';
-  html += 'function render(items){';
-  html += 'var c=el("#content");var h="<div class=\\"grid\\">";';
-  html += 'items.forEach(function(it,i){var icon=getIcon(it);';
-  html += 'var thumb=it.thumb?"<img src=\\""+it.thumb+"\\" loading=\\"lazy\\" onerror=\\"this.style.display=\\x27none\\x27\\">":icon;';
-  html += 'h+="<div class=\\"item\\" onclick=\\"onItem("+i+")\\"><div class=\\"item-icon\\">"+thumb+"</div><div class=\\"item-name\\">"+it.name+"</div><div class=\\"item-meta\\">"+(it.isDir?"\u6587\u4EF6\u5939":fmtSize(it.size))+"</div></div>";});';
-  html += 'h+="</div>";c.innerHTML=h;window._items=items;}';
+  html += 'function isVideo(n){return /\\.(mp4|mkv|avi|mov|flv|ts|webm|m4v)$/i.test(n)}';
+  html += 'function isMusic(n){return /\\.(mp3|wav|flac|aac|ogg|m4a)$/i.test(n)}';
+  html += 'function isNovel(n){return /\\.(txt|epub|mobi|pdf|doc|docx)$/i.test(n)}';
+  html += 'var _curFilter="all";window._searchCache={};';
+  html += 'function setFilter(f){_curFilter=f;document.querySelectorAll(".filter-tab").forEach(function(t){t.classList.toggle("on",t.dataset.filter===f)});if(f==="all"){render(window._allItems||[]);return}if(window._searchCache[f]){render(window._searchCache[f]);return}el("#content").innerHTML="<div class=\\"tip\\">\u641C\u7D22\u4E2D...</div>";fetch("/files-search?path="+encodeURIComponent(curPath)+"&cat="+f).then(function(r){return r.json()}).then(function(j){if(!j.ok||!j.items.length){el("#content").innerHTML="<div class=\\"tip\\">\u6CA1\u6709\u627E\u5230\u76F8\u5173\u6587\u4EF6</div>";window._items=[];window._searchCache[f]=[];return}window._searchCache[f]=j.items;render(j.items)}).catch(function(e){el("#content").innerHTML="<div class=\\"tip\\">\u641C\u7D22\u5931\u8D25: "+e.message+"</div>"})}';
+  html += 'function render(items){window._allItems=items;window._items=items;window._renderOffset=0;window._renderPageSize=60;var filtered=items;if(_curFilter!=="all"){filtered=items.filter(function(it){if(it.isDir)return false;var n=it.name;if(_curFilter==="video")return isVideo(n);if(_curFilter==="music")return isMusic(n);if(_curFilter==="novel")return isNovel(n);if(_curFilter==="image")return isImage(n);return false})}var c=el("#content");';
+  html += 'if(_curFilter!=="all"&&filtered.length===0){c.innerHTML="<div class=\\"tip\\">\u6CA1\u6709\u627E\u5230\u76F8\u5173\u6587\u4EF6</div>";return}';
+  html += 'window._lazyItems=filtered;var gc=_curFilter==="all"?"grid":"card-grid";';
+  html += 'c.innerHTML="<div class=\\""+gc+"\\" id=\\"lazyGrid\\"></div>";renderMore()}';
+  html += 'function renderMore(){var items=window._lazyItems;if(!items||window._renderOffset>=items.length)return;var grid=el("#lazyGrid");if(!grid)return;var end=Math.min(window._renderOffset+window._renderPageSize,items.length);var h="";';
+  html += 'for(var i=window._renderOffset;i<end;i++){var it=items[i];';
+  html += 'if(_curFilter==="all"){var icon=getIcon(it);var thumb=it.thumb?"<img src=\\""+it.thumb+"\\" loading=\\"lazy\\" onerror=\\"this.style.display=\\x27none\\x27\\">":icon;';
+  html += 'h+="<div class=\\"item\\" onclick=\\"onItem("+i+")\\"><div class=\\"item-icon\\">"+thumb+"</div><div class=\\"item-name\\">"+it.name+"</div><div class=\\"item-meta\\">"+(it.isDir?"\u6587\u4EF6\u5939":fmtSize(it.size))+"</div></div>"}';
+  html += 'else{var idx=window._allItems.indexOf(it);var _src=it.thumb;if(_curFilter==="image"&&!_src)_src="/files-stream?path="+encodeURIComponent(it.path);var img=_src?"<img src=\\""+_src+"\\" loading=\\"lazy\\" onerror=\\"this.style.display=\\x27none\\x27\\">":"<img src=\\"https://picsum.photos/seed/"+encodeURIComponent(it.name)+it.size+"/300/400\\" loading=\\"lazy\\">";var display=it.name.replace(/\\.[^.]+$/,"");h+="<div class=\\"vcard\\" onclick=\\"onItem("+idx+")\\"><div class=\\"vcard-poster\\">"+img+"</div><div class=\\"vcard-name\\">"+display+"</div></div>"}}';
+  html += 'grid.insertAdjacentHTML("beforeend",h);window._renderOffset=end;';
+  html += 'var tip=el("#loadMoreTip");if(end<items.length){if(!tip){tip=document.createElement("div");tip.id="loadMoreTip";tip.className="tip";tip.style.padding="20px";el("#content").appendChild(tip)}tip.textContent="\u4E0A\u62C9\u52A0\u8F7D\u66F4\u591A ("+end+"/"+items.length+")"}else if(tip){tip.remove()}}';
   html += 'function onItem(i){var it=window._items[i];if(!it)return;if(it.isDir){loadDir(it.path);window.scrollTo(0,0);return}showInfo(it)}';
   html += 'function showInfo(it){var p=el("#infoPanel");var h="<div class=\\"info-title\\">"+it.name+"</div>";';
   html += 'h+="<div class=\\"info-row\\"><div class=\\"info-label\\\">\u8DEF\u5F84</div><div class=\\"info-val\\">"+it.path+"</div></div>";';
@@ -4324,12 +4589,13 @@ html += 'var _bgOpacity=parseInt(localStorage.getItem(\x27bgOpacity\x27))||30;va
   html += 'var hd=d.querySelector(".header");if(hd)hd.style.display=""';
   html += '}catch(e){try{parent.postMessage({type:"closeCatFrame"},"*")}catch(e2){history.back()}}}else{history.back()}return}';
   html += 'var parts=curPath.replace(/\\/$/,"").split("/");parts.pop();loadDir(parts.join("/")||"/sdcard/Download")};';
-  html += 'function loadDir(p){curPath=p;el("#pathBar").textContent=p;el("#content").innerHTML="<div class=\\"tip\\\">\u52A0\u8F7D\u4E2D...</div>";';
+  html += 'function loadDir(p){curPath=p;window._searchCache={};window._allItems=null;el("#pathBar").textContent=p;el("#content").innerHTML="<div class=\\"tip\\\">\u52A0\u8F7D\u4E2D...</div>";';
   html += 'fetch("/files-api?path="+encodeURIComponent(p)).then(function(r){return r.json()}).then(function(j){';
   html += 'if(!j.ok){el("#content").innerHTML="<div class=\\"tip\\\">\u274C "+j.error+"</div>";return}';
   html += 'if(!j.items.length){el("#content").innerHTML="<div class=\\"tip\\\">\u7A7A\u6587\u4EF6\u5939</div>";return}';
   html += 'render(j.items)}).catch(function(e){el("#content").innerHTML="<div class=\\"tip\\\">\u52A0\u8F7D\u5931\u8D25: "+e.message+"</div>"})}';
   html += 'loadDir(curPath);';
+  html += 'window.addEventListener("scroll",function(){if(window._lazyItems&&window._renderOffset<window._lazyItems.length){var threshold=300;if(window.scrollY+window.innerHeight>document.body.scrollHeight-threshold){renderMore()}}},{passive:true});';
   html += 'function openEpub(idx){var it=window._items[idx];el("#playerTitle").textContent=it.name;var wrap=_cleanupPlayerListeners();_clearReaderGlobals();wrap.innerHTML="<div style=\\"position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.5);font-size:14px\\" id=\\"epubLoading\\">\\u52A0\\u8F7D\\u4E2D...</div>";el("#playerOverlay").classList.add("show");closeInfo();';
   html += 'fetch("/files-epub-view?path="+encodeURIComponent(it.path)).then(function(r){return r.json()}).then(function(j){';
   html += 'if(!j.ok||!j.text){wrap.innerHTML="<div style=\\"position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:20px;color:#ff6b6b;font-size:13px;text-align:center\\">"+(j.error||"\\u65E0\\u6CD5\\u89E3\\u6790")+"<br><br>\\u626B\\u63CF\\u5230"+(j.htmlCount||0)+"\\u4E2AHTML\\u6587\\u4EF6<br>"+(j.errors&&j.errors.length?"\\u9519\\u8BEF: "+j.errors.join("; "):"")+"</div>";return}';
